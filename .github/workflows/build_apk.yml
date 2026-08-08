@@ -1,0 +1,85 @@
+name: Build APK
+
+# Optimizado para consumir el mínimo de minutos.
+#
+# Si el repo es PÚBLICO, los runners estándar de GitHub son gratis e
+# ilimitados: no toca la cuota de 2.000 min/mes de los repos privados.
+#
+# Si lo pasas a privado, la caché de abajo es lo que evita reinstalar
+# Flutter + Android SDK en cada corrida (~8-10 min por build ahorrados).
+
+on:
+  workflow_dispatch:        # botón manual — evita builds accidentales
+  push:
+    branches: [main]
+    paths:                  # solo recompila si cambió algo que afecta al APK
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - '.github/workflows/build_apk.yml'
+
+# Cancela un build en curso si empujas otro commit. Evita pagar dos veces
+# por un artefacto que ya no vas a usar.
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   # Linux = multiplicador 1x (Windows 2x, macOS 10x)
+    timeout-minutes: 45      # tope duro: un build colgado no drena la cuota
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true        # cachea el SDK de Flutter entre corridas
+
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Android/sdk
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.pub-cache
+          key: android-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            android-${{ runner.os }}-
+
+      - name: Instalar Flet
+        run: |
+          python -m pip install --upgrade pip
+          pip install flet==0.28.3
+
+      - name: Build APK
+        run: |
+          flet build apk \
+            --project HumanOS \
+            --product HumanOS \
+            --org com.altair \
+            --verbose
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: humanos-apk
+          path: build/apk/*.apk
+          retention-days: 14   # 90 días por defecto consume storage sin motivo
+          if-no-files-found: error
