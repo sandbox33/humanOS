@@ -1,0 +1,24 @@
+# Datos reales — NUNCA se suben. El repo es público.
+*.db
+*.db-wal
+*.db-shm
+src/data/
+data/
+
+# Build
+build/
+dist/
+.flet/
+*.apk
+*.aab
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Claves de firma
+*.jks
+*.keystore
+.env

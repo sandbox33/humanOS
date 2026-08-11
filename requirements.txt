@@ -1,0 +1,8 @@
+# Flet fijado a la rama v0 a propósito.
+# Flet 0.80+ es una reescritura con cambios incompatibles (text -> label,
+# ImageFit -> BoxFit, etc.). 0.28.x sigue recibiendo parches de bugs y
+# seguridad. Migrar a 0.8x es una tarea aparte, no un `pip install -U`.
+flet==0.28.3
+
+# Peewee es Python puro: no necesita wheels precompiladas para Android.
+peewee>=3.17.0

@@ -1,0 +1,32 @@
+[project]
+name = "humanos"
+version = "1.0.0"
+description = "HumanOS — sistema personal de nutrición, alarmas y rendimiento"
+requires-python = ">=3.11"
+dependencies = [
+    "flet==0.28.3",
+    "peewee>=3.17.0",
+]
+
+[tool.flet]
+org = "com.altair"
+product = "HumanOS"
+company = "Altair"
+copyright = "Copyright (c) 2026 Altair"
+build_number = 1
+
+[tool.flet.app]
+path = "src"
+module = "main"
+
+[tool.flet.android]
+min_sdk_version = 24
+
+[tool.flet.android.permission]
+"android.permission.POST_NOTIFICATIONS" = true
+"android.permission.SCHEDULE_EXACT_ALARM" = true
+"android.permission.USE_EXACT_ALARM" = true
+"android.permission.USE_FULL_SCREEN_INTENT" = true
+"android.permission.RECEIVE_BOOT_COMPLETED" = true
+"android.permission.WAKE_LOCK" = true
+"android.permission.INTERNET" = false
