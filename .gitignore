@@ -1,24 +1,64 @@
-# Datos reales — NUNCA se suben. El repo es público.
+# HumanOS v3 — the repository is public. Real data never goes here.
 *.db
 *.db-wal
 *.db-shm
-src/data/
-data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite.sha256
+.env
 
-# Build
+# Signing material (the encrypted key lives only as a release asset)
+*.jks
+*.jks.enc
+*.keystore
+key.properties
+
+# Dart / Flutter
+.dart_tool/
+.packages
 build/
-dist/
-.flet/
-*.apk
-*.aab
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+*.iml
+.idea/
+.vscode/
+*.g.dart
+coverage/
+/packages/humanos_core/pubspec.lock.bak
 
-# Python
+# Android: only the custom files are committed; CI runs `flutter create`
+/android/*
+!/android/app/
+/android/app/*
+!/android/app/build.gradle.kts
+!/android/app/proguard-rules.pro
+!/android/app/src/
+/android/app/src/*
+!/android/app/src/main/
+/android/app/src/main/*
+!/android/app/src/main/AndroidManifest.xml
+!/android/app/src/main/kotlin/
+!/android/app/src/main/res/
+/android/app/src/main/res/*
+!/android/app/src/main/res/drawable/
+!/android/app/src/main/res/mipmap-anydpi-v26/
+!/android/app/src/main/res/values/
+/android/app/src/main/res/values/*
+!/android/app/src/main/res/values/ic_launcher_background.xml
+!/android/app/src/main/res/xml/
+/ios/
+/web/
+/linux/
+/macos/
+/windows/
+
+# ETL caches and outputs
+etl/.cache/
+etl/out/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 venv/
-
-# Claves de firma
-*.jks
-*.keystore
-.env
