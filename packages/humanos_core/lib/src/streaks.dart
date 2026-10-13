@@ -6,8 +6,8 @@
 ///   survives secondary failures, which is the point of having it.
 ///
 /// A day without any record is *empty*, never a failure: it stops the count
-/// but is not counted as a failed day. Today without records is *pending*
-/// and does not break anything yet. Every 14 completed days earn a repair
+/// but is not counted as a failed day. Today is *pending* until it is
+/// completed, so an unfinished day never breaks anything yet. Every 14 completed days earn a repair
 /// token that bridges one failed or empty day. Breaking a streak keeps
 /// `best`, and the UI shows "mejor racha" and "días cumplidos en 30"
 /// instead of a red zero.
@@ -235,8 +235,11 @@ Map<DateTime, DayStatus> dayStatuses({
     }
     if (noData) {
       result[day] = day == todayDay ? DayStatus.pending : DayStatus.empty;
+    } else if (done) {
+      result[day] = DayStatus.completed;
     } else {
-      result[day] = done ? DayStatus.completed : DayStatus.failed;
+      // Today is not over: an unfinished day is still pending.
+      result[day] = day == todayDay ? DayStatus.pending : DayStatus.failed;
     }
   }
   return result;
@@ -259,7 +262,9 @@ Map<DateTime, DayStatus> habitStatuses({
                   : DayStatus.empty)
             : (evaluateHabit(habit, e.value, params).completed
                   ? DayStatus.completed
-                  : DayStatus.failed),
+                  : (dateOnly(e.key) == todayDay
+                        ? DayStatus.pending
+                        : DayStatus.failed)),
   };
 }
 

@@ -138,6 +138,31 @@ class MealsRepository {
     });
   }
 
+  /// Changes the grams of a logged item. Pantry stock follows the change
+  /// (never below zero); insufficient stock is reported, not refused.
+  Future<StockResult> updateItemGrams(MealItemRow item, double grams) {
+    return _db.transaction(() async {
+      await (_db.update(_db.mealItems)..where((t) => t.id.equals(item.id)))
+          .write(MealItemsCompanion(grams: Value(grams)));
+      final pantryId = item.pantryItemId;
+      if (pantryId == null) return const StockResult();
+      final pantry = await (_db.select(_db.pantryItems)
+            ..where((t) => t.id.equals(pantryId)))
+          .getSingleOrNull();
+      if (pantry == null) return const StockResult();
+      final extra = grams - item.grams;
+      final remaining = pantry.gramsRemaining - extra;
+      final clamped = remaining < 0 ? 0.0 : remaining;
+      await (_db.update(_db.pantryItems)..where((t) => t.id.equals(pantryId)))
+          .write(PantryItemsCompanion(gramsRemaining: Value(clamped)));
+      return StockResult(
+        availableG: pantry.gramsRemaining,
+        requestedG: extra > 0 ? extra : 0,
+        remainingG: clamped,
+      );
+    });
+  }
+
   /// Deletes an item; grams taken from the pantry go back to it.
   Future<void> removeItem(MealItemRow item) {
     return _db.transaction(() async {

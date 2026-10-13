@@ -76,3 +76,16 @@ final crtGovernorProvider = NotifierProvider<CrtGovernor, bool>(CrtGovernor.new)
 final crtEnabledProvider = Provider<bool>(
   (ref) => ref.watch(settingsProvider).crtHeaders && !ref.watch(crtGovernorProvider),
 );
+
+/// What happened to the reference database at launch (diagnosis screen).
+class ReferenceStatus {
+  const ReferenceStatus({required this.installed, this.updated = false, this.errorEs});
+  final bool installed;
+
+  /// The copy was (re)written from the APK in this launch.
+  final bool updated;
+  final String? errorEs;
+}
+
+final referenceStatusProvider =
+    Provider<ReferenceStatus>((ref) => const ReferenceStatus(installed: false));

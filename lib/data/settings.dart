@@ -1,5 +1,3 @@
-import 'package:drift/drift.dart';
-
 import 'user_db.dart';
 
 /// Accent colours allowed by the visual identity.
@@ -69,6 +67,8 @@ abstract final class SettingKey {
   static const weeklyTargetReviewed = 'weekly_target_reviewed';
   static const usageStatsAsked = 'usage_stats_asked';
   static const bleDeviceId = 'ble_device_id';
+  static const healthLastSync = 'health_last_sync';
+  static const healthGranted = 'health_granted';
 }
 
 class SettingsRepository {

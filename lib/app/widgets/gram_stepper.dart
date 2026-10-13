@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:humanos_core/humanos_core.dart';
 
 import '../theme.dart';
+import 'hos_page.dart';
 
 /// Large numeric stepper (grams, kg, litres) usable with one hand.
 class ValueStepper extends StatelessWidget {
@@ -75,7 +76,8 @@ class ValueStepper extends StatelessWidget {
   }
 }
 
-/// Asks for a number with a numeric keyboard; null when cancelled.
+/// Asks for a number with a numeric keyboard; null when cancelled or not a
+/// number. Accepts a decimal comma.
 Future<double?> askNumber(
   BuildContext context, {
   required String title,
@@ -83,34 +85,13 @@ Future<double?> askNumber(
   String unit = '',
   int decimals = 1,
 }) async {
-  final controller = TextEditingController(
-    text: initial == null ? '' : formatDecimal(initial, decimals: decimals),
+  final text = await askText(
+    context,
+    title: title,
+    initial: initial == null ? null : formatDecimal(initial, decimals: decimals),
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    suffix: unit.isEmpty ? null : unit,
   );
-  final result = await showDialog<double>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title.toUpperCase()),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(suffixText: unit),
-        onSubmitted: (text) => Navigator.of(context)
-            .pop(double.tryParse(text.replaceAll(',', '.'))),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CANCELAR'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context)
-              .pop(double.tryParse(controller.text.replaceAll(',', '.'))),
-          child: const Text('ACEPTAR'),
-        ),
-      ],
-    ),
-  );
-  controller.dispose();
-  return result;
+  if (text == null || text.isEmpty) return null;
+  return double.tryParse(text.replaceAll(',', '.'));
 }

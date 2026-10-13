@@ -99,39 +99,98 @@ final habitsOverviewProvider = Provider<HabitsOverview?>((ref) {
     minimumToday: minimumDay(defs, todayValues, params),
     scoreToday: scoreDay(defs, todayValues, params),
     suggestMission: suggestMinimumMission(
+      minimumStatuses[addDays(today, -2)],
       minimumStatuses[addDays(today, -1)],
-      minimumStatuses[today],
     ),
   );
 });
 
-/// Writes today's automatic habit values from the data they come from.
-/// Manual habits (B3) and missing sources are left untouched.
+/// Habit sources the app fills by itself (B3 is a manual check).
+const autoHabitSources = {
+  HabitSource.proteinG,
+  HabitSource.weighIn,
+  HabitSource.sober,
+  HabitSource.screenMinutes,
+  HabitSource.hydrationPct,
+  HabitSource.sleepHours,
+};
+
+/// Today's value of every automatic source (null = unknown).
+final autoHabitValuesProvider = Provider<Map<String, double?>>((ref) {
+  final todayDay = ref.watch(todayProvider);
+  final today = isoDate(todayDay);
+  final intake = ref.watch(dayIntakeProvider(today)).value;
+  final log = ref.watch(todayLogProvider);
+  final weight = ref.watch(latestWeightProvider);
+  final compliance = ref.watch(hydrationComplianceProvider);
+  final sleepMin = ref.watch(dailyTelemetryProvider)[todayDay]?.sleepMinutes;
+  final sober = log?.sober;
+  return {
+    HabitSource.proteinG: intake == null || intake.isEmpty
+        ? null
+        : intake.totals.value(NutrientKey.protein),
+    HabitSource.weighIn: weight?.date == today ? 1 : 0,
+    HabitSource.sober: sober == null ? null : (sober ? 1 : 0),
+    HabitSource.screenMinutes: log?.screenMinutes?.toDouble(),
+    HabitSource.hydrationPct:
+        (log?.heatHours ?? 0) > 0 && compliance != null ? compliance * 100 : null,
+    HabitSource.sleepHours: sleepMin == null ? null : sleepMin / 60,
+  };
+});
+
+/// Mirrors today's automatic values into `habit_logs`. Manual habits are
+/// never touched; an unknown source clears its value.
 Future<void> syncAutoHabits(WidgetRef ref) async {
   final repo = ref.read(habitsRepositoryProvider);
-  final habits = await repo.habits();
-  final todayDay = ref.read(todayProvider);
-  final today = isoDate(todayDay);
-  final intake = ref.read(dayIntakeProvider(today)).value;
-  final log = ref.read(todayLogProvider);
-  final weight = ref.read(latestWeightProvider);
-  final compliance = ref.read(hydrationComplianceProvider);
-  final sleepMin = ref.read(dailyTelemetryProvider)[todayDay]?.sleepMinutes;
-  for (final h in habits) {
-    final double? value = switch (h.source) {
-      HabitSource.proteinG => intake == null || intake.isEmpty
-          ? null
-          : intake.totals.value(NutrientKey.protein),
-      HabitSource.weighIn => weight?.date == today ? 1 : null,
-      HabitSource.sober => log?.sober == null ? null : (log!.sober! ? 1 : 0),
-      HabitSource.screenMinutes => log?.screenMinutes?.toDouble(),
-      HabitSource.hydrationPct =>
-        (log?.heatHours ?? 0) > 0 && compliance != null ? compliance * 100 : null,
-      HabitSource.sleepHours => sleepMin == null ? null : sleepMin / 60,
-      _ => null,
-    };
-    if (value != null) await repo.setValue(h.id, today, value);
+  final values = ref.read(autoHabitValuesProvider);
+  final today = isoDate(ref.read(todayProvider));
+  for (final h in await repo.habits()) {
+    final source = h.source;
+    if (source == null || !autoHabitSources.contains(source)) continue;
+    final value = values[source];
+    if (value == null) {
+      await repo.clearValue(h.id, today);
+    } else {
+      await repo.setValue(h.id, today, value);
+    }
   }
+}
+
+final streakStateProvider = StreamProvider<List<StreakStateRow>>((ref) {
+  final db = ref.watch(userDbProvider);
+  return db.select(db.streakState).watch();
+});
+
+/// Stores the minimum and global streaks; returns the tiers whose current
+/// count went up since the stored state (a real event for feedback).
+Future<List<StreakKind>> saveStreaks(WidgetRef ref) async {
+  final overview = ref.read(habitsOverviewProvider);
+  if (overview == null) return const [];
+  final stored = {
+    for (final r in ref.read(streakStateProvider).value ?? const <StreakStateRow>[])
+      r.kind: r,
+  };
+  final repo = ref.read(habitsRepositoryProvider);
+  final up = <StreakKind>[];
+  for (final (kind, summary) in [
+    (StreakKind.minimum, overview.minimum),
+    (StreakKind.global, overview.global),
+  ]) {
+    final previous = stored[kind.code];
+    if (previous != null && summary.current > previous.current) up.add(kind);
+    if (previous == null ||
+        previous.current != summary.current ||
+        previous.best != summary.best ||
+        previous.repairTokens != summary.repairTokens) {
+      await repo.saveStreak(
+        kind.code,
+        current: summary.current,
+        best: summary.best,
+        tokens: summary.repairTokens,
+      );
+    }
+  }
+  return up;
 }
 
 /// The four attributes from real data.
@@ -233,23 +292,33 @@ final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
   );
 });
 
-/// Saves today's attributes and returns those that went up since the last
-/// stored day (for the optional feedback event).
+/// Saves today's attributes and returns those that rose above the last
+/// stored day for the first time today (the feedback event).
 Future<List<AttributeKind>> saveAttributes(WidgetRef ref) async {
   final values = ref.read(attributesProvider);
   final today = isoDate(ref.read(todayProvider));
   final rows = ref.read(attributeRowsProvider).value ?? const <AttributeRow>[];
   final previous = <AttributeKind, double?>{};
+  final storedToday = <AttributeKind, double>{};
   for (final row in rows) {
-    if (row.date.compareTo(today) >= 0) continue;
     for (final kind in AttributeKind.values) {
-      if (kind.code == row.attr) previous[kind] = row.value;
+      if (kind.code != row.attr) continue;
+      if (row.date == today) {
+        storedToday[kind] = row.value;
+      } else if (row.date.compareTo(today) < 0) {
+        previous[kind] = row.value;
+      }
     }
   }
   final repo = ref.read(habitsRepositoryProvider);
   for (final entry in values.entries) {
     final value = entry.value;
-    if (value != null) await repo.saveAttribute(today, entry.key.code, value);
+    if (value != null && storedToday[entry.key] != value) {
+      await repo.saveAttribute(today, entry.key.code, value);
+    }
   }
-  return attributesUp(previous, values);
+  return [
+    for (final kind in attributesUp(previous, values))
+      if (storedToday[kind] == null || values[kind]! > storedToday[kind]! + 1e-9) kind,
+  ];
 }

@@ -32,7 +32,7 @@ class TerminalPanel extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
             const SizedBox(height: 10),

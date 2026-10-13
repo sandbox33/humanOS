@@ -146,6 +146,40 @@ void main() {
     expect(result[addDays(today, -1)], DayStatus.completed);
   });
 
+  test('an unfinished today stays pending; a finished one completes', () {
+    final partial = dayStatuses(
+      kind: StreakKind.minimum,
+      habits: habits,
+      valuesByDay: {
+        addDays(today, -1): {1: 40, 2: 0, 3: 1},
+        today: {1: 40, 2: 0},
+      },
+      today: today,
+      params: p,
+    );
+    expect(partial[addDays(today, -1)], DayStatus.failed);
+    expect(partial[today], DayStatus.pending);
+
+    final done = dayStatuses(
+      kind: StreakKind.minimum,
+      habits: habits,
+      valuesByDay: {
+        today: {1: 120, 2: 1},
+      },
+      today: today,
+      params: p,
+    );
+    expect(done[today], DayStatus.completed);
+
+    final single = habitStatuses(
+      habit: screen,
+      values: {today: 90},
+      today: today,
+      params: p,
+    );
+    expect(single[today], DayStatus.pending);
+  });
+
   test('per-habit statuses', () {
     final result = habitStatuses(
       habit: screen,

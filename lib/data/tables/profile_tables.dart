@@ -1,3 +1,6 @@
+// Drift column checks reference their own getter by design.
+// ignore_for_file: recursive_getters
+
 import 'package:drift/drift.dart';
 
 /// Single-row profile (`id = 1`).

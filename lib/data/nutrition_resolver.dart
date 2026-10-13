@@ -69,11 +69,11 @@ class NutritionResolver {
     Map<String, ProductRecord> cachedProducts = const {},
     Map<int, FoodFlags> flags = const {},
   })  : _cached = cachedProducts,
-        _flags = flags;
+        _flagsById = flags;
 
   final ReferenceDb? reference;
   final Map<String, ProductRecord> _cached;
-  final Map<int, FoodFlags> _flags;
+  final Map<int, FoodFlags> _flagsById;
   final Map<int, ResolvedFood> _foodCache = {};
   final Map<String, ResolvedFood> _productCache = {};
 
@@ -109,7 +109,7 @@ class NutritionResolver {
           isRaw: food.isRaw,
           ironHeme: props?.ironHeme,
           inhibitsNonHemeIron: props?.inhibitsNonHemeIron ?? false,
-          flags: _flags[id] ?? const FoodFlags(),
+          flags: _flagsById[id] ?? const FoodFlags(),
           nova: props?.nova,
           properties: props,
         );
