@@ -22,6 +22,7 @@ import difflib
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import sys
 from dataclasses import dataclass, field
@@ -136,8 +137,15 @@ def state_of(description: str) -> str | None:
 
 
 def _closest(description: str, candidates: list[str]) -> str:
-    matches = difflib.get_close_matches(description, candidates, n=5, cutoff=0.55)
-    return "; ".join(matches) if matches else "(sin coincidencias cercanas)"
+    """Hints for a description that did not match: fuzzy matches plus
+    descriptions containing all of its significant words."""
+    fuzzy = difflib.get_close_matches(description, candidates, n=5, cutoff=0.55)
+    words = [w for w in re.findall(r"[a-z]+", description.lower()) if len(w) >= 3]
+    containing = sorted(
+        (c for c in candidates if all(w in c.lower() for w in words[:4])), key=len
+    )[:5]
+    hints = list(dict.fromkeys([*containing, *fuzzy]))
+    return "; ".join(hints) if hints else "(sin coincidencias cercanas)"
 
 
 class _Resolver:
