@@ -1,0 +1,3 @@
+Los sonidos de esta carpeta son tonos sinusoidales generados para HumanOS
+(sin material de terceros). Se distribuyen con la misma licencia que el
+resto del proyecto.
