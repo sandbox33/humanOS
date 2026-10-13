@@ -300,9 +300,9 @@ def _insert_food(
         [(food_id, nutrient_id, value) for nutrient_id, value in sorted(nutrients.items())],
     )
     columns = ", ".join(properties)
-    placeholders = ", ".join("?" for _ in properties)
+    marks = ", ".join("?" for _ in properties)
     con.execute(
-        f"INSERT INTO food_properties(food_id, {columns}) VALUES (?, {placeholders})",
+        f"INSERT INTO food_properties(food_id, {columns}) VALUES (?, {marks})",
         (food_id, *properties.values()),
     )
 
