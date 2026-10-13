@@ -119,6 +119,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
     await service.scheduleSession(
       plan.earliestDate,
       'Sesión ${plan.template.code} · ${plan.mode.labelEs}. Antes, revisa tu estado.',
+      minuteOfDay: shift.shiftEndMin,
       enabled: settings.sessionReminder,
     );
   } on Object {

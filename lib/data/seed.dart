@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:humanos_core/humanos_core.dart';
 
+import 'settings.dart';
 import 'user_db.dart';
 
 /// Habit sources filled automatically from other data.
@@ -96,6 +97,12 @@ Future<void> seedIfNeeded(UserDb db) async {
           MealTemplatesCompanion.insert(nameEs: 'Almuerzo taller'),
           MealTemplatesCompanion.insert(nameEs: 'Cena'),
         ]);
+        // Day-1 weigh-in dialog starts at the owner's last known weight; it
+        // is only stored as a weight when the user confirms it.
+        b.insert(
+          db.appSettings,
+          AppSettingsCompanion.insert(key: SettingKey.weightPrefill, value: '65'),
+        );
       });
     }
     final stored = {

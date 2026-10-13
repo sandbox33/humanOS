@@ -43,7 +43,7 @@ class HosPage extends StatelessWidget {
                 ...actions,
               ],
             ),
-            if (bottom != null) bottom!,
+            ?bottom,
             Expanded(child: body),
           ],
         ),

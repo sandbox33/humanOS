@@ -58,7 +58,12 @@ double? _bounded(Object? value, double max) {
 /// Parses an OFF API v2 answer. Label values per 100 g are kept as given;
 /// implausible ones become null.
 ProductRecord? parseOffProduct(String json, {bool fromCache = true}) {
-  final decoded = jsonDecode(json);
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(json);
+  } on FormatException {
+    return null;
+  }
   if (decoded is! Map<String, dynamic>) return null;
   final product = decoded['product'];
   if (product is! Map<String, dynamic>) return null;

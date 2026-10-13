@@ -55,7 +55,9 @@ class EstadoScreen extends ConsumerWidget {
 
 Future<void> askWeight(BuildContext context, WidgetRef ref) async {
   final latest = ref.read(latestWeightProvider);
-  final kg = await askNumber(context, title: 'Peso de hoy', initial: latest?.kg, unit: 'kg');
+  final settings = ref.read(settingsMapProvider).value ?? const {};
+  final initial = latest?.kg ?? double.tryParse(settings[SettingKey.weightPrefill] ?? '');
+  final kg = await askNumber(context, title: 'Peso de hoy', initial: initial, unit: 'kg');
   if (kg == null || kg < 30 || kg > 250) return;
   await ref.read(bodyRepositoryProvider).setWeight(isoDate(ref.read(todayProvider)), kg);
 }

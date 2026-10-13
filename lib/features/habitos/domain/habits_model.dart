@@ -115,6 +115,10 @@ const autoHabitSources = {
   HabitSource.sleepHours,
 };
 
+/// Automatic sources that may also be typed by hand when the band has no
+/// data (an unknown automatic value never erases a manual one).
+const manualFallbackSources = {HabitSource.sleepHours};
+
 /// Today's value of every automatic source (null = unknown).
 final autoHabitValuesProvider = Provider<Map<String, double?>>((ref) {
   final todayDay = ref.watch(todayProvider);
@@ -148,10 +152,10 @@ Future<void> syncAutoHabits(WidgetRef ref) async {
     final source = h.source;
     if (source == null || !autoHabitSources.contains(source)) continue;
     final value = values[source];
-    if (value == null) {
-      await repo.clearValue(h.id, today);
-    } else {
+    if (value != null) {
       await repo.setValue(h.id, today, value);
+    } else if (!manualFallbackSources.contains(source)) {
+      await repo.clearValue(h.id, today);
     }
   }
 }

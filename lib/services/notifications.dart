@@ -17,7 +17,10 @@ abstract class NotificationService {
     required String body,
     required bool enabled,
   });
-  Future<void> scheduleSession(DateTime? day, String body, {required bool enabled});
+  /// Reminder on the next session day at [minuteOfDay] (the end of the
+  /// shift).
+  Future<void> scheduleSession(DateTime? day, String body,
+      {required int minuteOfDay, required bool enabled});
 }
 
 class LocalNotificationService implements NotificationService {
@@ -143,11 +146,12 @@ class LocalNotificationService implements NotificationService {
 
   @override
   Future<void> scheduleSession(DateTime? day, String body,
-      {required bool enabled}) async {
+      {required int minuteOfDay, required bool enabled}) async {
     await init();
     await _plugin.cancel(id: _sessionId);
     if (!enabled || day == null) return;
-    final at = tz.TZDateTime(tz.local, day.year, day.month, day.day, 17, 15);
+    final at = tz.TZDateTime(
+        tz.local, day.year, day.month, day.day, minuteOfDay ~/ 60, minuteOfDay % 60);
     if (!at.isAfter(tz.TZDateTime.now(tz.local))) return;
     await _plugin.zonedSchedule(
       id: _sessionId,
@@ -178,5 +182,5 @@ class SilentNotificationService implements NotificationService {
   }) async {}
   @override
   Future<void> scheduleSession(DateTime? day, String body,
-      {required bool enabled}) async {}
+      {required int minuteOfDay, required bool enabled}) async {}
 }

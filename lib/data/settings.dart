@@ -68,6 +68,9 @@ abstract final class SettingKey {
   static const usageStatsAsked = 'usage_stats_asked';
   static const bleDeviceId = 'ble_device_id';
   static const healthLastSync = 'health_last_sync';
+
+  /// Value shown in the first weigh-in dialog (seeded, editable there).
+  static const weightPrefill = 'weight_prefill_kg';
   static const healthGranted = 'health_granted';
 }
 
