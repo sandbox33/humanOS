@@ -208,7 +208,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                 : () async {
                     setState(() => _looking = true);
                     final result = await lookupProduct(ref, widget.barcode);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     setState(() => _looking = false);
                     toast(context, result.messageEs);
                   },

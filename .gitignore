@@ -44,6 +44,7 @@ coverage/
 /android/app/src/main/res/*
 !/android/app/src/main/res/drawable/
 !/android/app/src/main/res/mipmap-anydpi-v26/
+!/android/app/src/main/res/raw/
 !/android/app/src/main/res/values/
 /android/app/src/main/res/values/*
 !/android/app/src/main/res/values/ic_launcher_background.xml

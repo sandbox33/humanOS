@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:humanos/app/providers.dart';
 import 'package:humanos/app/theme.dart';
 import 'package:humanos/data/reference_db.dart';
@@ -31,7 +32,7 @@ ReferenceDb fixtureReferenceDb() {
   final db = sql.sqlite3.openInMemory();
   db.execute(referenceDdl());
   db.execute(
-    "INSERT INTO sources(id, code, name, license, url, version) VALUES "
+    'INSERT INTO sources(id, code, name, license, url, version) VALUES '
     "(1, 'fdc_sr', 'USDA FoodData Central SR Legacy', 'CC0 1.0', 'https://fdc.nal.usda.gov', '2018-04')",
   );
   const foods = [
@@ -72,7 +73,7 @@ ReferenceDb fixtureReferenceDb() {
   }
   db.execute('INSERT INTO food_names_fts(name, food_id) SELECT name, food_id FROM food_names');
   db.execute(
-    "INSERT INTO nutrients(id, fdc_nutrient_id, name_es, unit, category) VALUES "
+    'INSERT INTO nutrients(id, fdc_nutrient_id, name_es, unit, category) VALUES '
     "(1, 1008, 'Energía', 'kcal', 'Energía'), (2, 1003, 'Proteína', 'g', 'Macronutrientes')",
   );
   db.execute(
@@ -80,7 +81,7 @@ ReferenceDb fixtureReferenceDb() {
     '(4, 1, 132), (4, 2, 8.9), (5, 1, 360), (5, 2, 7)',
   );
   db.execute(
-    "INSERT INTO products(barcode, name, brand, kcal_100g, protein_100g) VALUES "
+    'INSERT INTO products(barcode, name, brand, kcal_100g, protein_100g) VALUES '
     "('7861234567890', 'Atún en agua', 'Marca prueba', 116, 26)",
   );
   db.execute("INSERT INTO products_fts(name, brand, barcode) VALUES ('Atún en agua', 'Marca prueba', '7861234567890')");

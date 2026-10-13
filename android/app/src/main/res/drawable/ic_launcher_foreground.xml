@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive launcher foreground: phosphor prompt and cursor inside the
+     66 dp safe zone of the 108 dp canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FF39FF14"
+        android:pathData="M34,38L39,33L60,54L39,75L34,70L50,54Z" />
+    <path
+        android:fillColor="#FF39FF14"
+        android:pathData="M58,68H76V75H58Z" />
+</vector>

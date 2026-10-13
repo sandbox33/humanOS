@@ -62,7 +62,9 @@ class _BlePageState extends ConsumerState<BlePage> {
     try {
       _scan = monitor.scan().listen(
             (devices) => setState(() => _devices = devices),
-            onError: (Object e) => toast(context, 'Bluetooth: $e'),
+            onError: (Object e) {
+              if (mounted) toast(context, 'Bluetooth: $e');
+            },
           );
       await Future<void>.delayed(const Duration(seconds: 12));
     } on Object catch (e) {

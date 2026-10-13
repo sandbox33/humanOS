@@ -79,3 +79,26 @@ jobs:
         run: dart run build_runner build
       - run: flutter analyze
       - run: flutter test
+
+  android:
+    name: APK de prueba (firma de depuración)
+    needs: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Completar el proyecto Android (solo archivos que faltan)
+        run: flutter create --org com.altair --project-name humanos --platforms android .
+      - run: flutter pub get
+      - name: Generar código (drift)
+        run: dart run build_runner build
+      - name: Compilar (release arm64, sin publicar)
+        run: flutter build apk --release --target-platform android-arm64

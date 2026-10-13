@@ -350,7 +350,7 @@ class _BackupPanel extends ConsumerWidget {
     final ok = await confirm(
       context,
       title: 'Importar copia',
-      message: 'Se reemplazarán TODOS tus datos actuales por los de la copia. '
+      message: 'Se reemplazarán todos tus datos actuales por los de la copia. '
           'Esta acción no se puede deshacer.',
       accept: 'REEMPLAZAR',
     );

@@ -1,0 +1,58 @@
+name: etl
+
+# Builds the read-only food database (reference.sqlite) from USDA FoodData
+# Central, Open Food Facts and the optional local tables, and publishes it
+# with its .sha256 to a release named refdb-v<date>. Manual or monthly.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 1 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: etl
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Base de alimentos
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: etl/requirements.txt
+      - name: Caché de descargas USDA
+        uses: actions/cache@v4
+        with:
+          path: etl/.cache
+          key: fdc-${{ hashFiles('etl/sources/fdc.py') }}
+          restore-keys: fdc-
+      - run: python -m pip install -r etl/requirements.txt
+      - name: Pruebas
+        run: python -m pytest etl/tests -v -rs
+      - name: Construir reference.sqlite
+        run: |
+          mkdir -p etl/out
+          python -m etl.build_reference_db --out etl/out/reference.sqlite --report-json etl/out/report.json
+          cd etl/out && sha256sum -c reference.sqlite.sha256
+      - name: Publicar release refdb
+        run: |
+          set -euo pipefail
+          tag="refdb-v$(date -u +%Y%m%d)"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            tag="${tag}.${{ github.run_number }}"
+          fi
+          gh release create "$tag" \
+            etl/out/reference.sqlite etl/out/reference.sqlite.sha256 etl/out/report.json \
+            --target "${{ github.sha }}" \
+            --title "Base de alimentos $tag" \
+            --notes "Base de referencia de HumanOS (solo lectura). Fuentes: USDA FoodData Central (CC0) y Open Food Facts (ODbL). La usa el workflow android."
+          echo "Publicado $tag" >> "$GITHUB_STEP_SUMMARY"

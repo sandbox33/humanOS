@@ -1,0 +1,141 @@
+name: android
+
+# The only build the owner runs: Actions → android → Run workflow.
+# Needs one secret, KEYSTORE_PASSWORD. The upload key is created on the first
+# run, stored only encrypted (release "signing-key"), and reused afterwards.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: APK firmado
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+    steps:
+      - name: Comprobar el secret
+        run: |
+          if [ -z "${KEYSTORE_PASSWORD}" ]; then
+            echo "::error::Falta el secret KEYSTORE_PASSWORD. Créalo en Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Completar el proyecto Android (solo archivos que faltan)
+        run: flutter create --org com.altair --project-name humanos --platforms android .
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Base de alimentos
+        run: |
+          set -euo pipefail
+          tag=$(gh release list --limit 200 --json tagName \
+            --jq '[.[] | select(.tagName | startswith("refdb-v"))][0].tagName // ""')
+          mkdir -p assets/db
+          if [ -z "$tag" ]; then
+            echo "No hay release refdb-v*: se construye la base ahora (primera vez)."
+            python -m pip install -r etl/requirements.txt
+            python -m pytest etl/tests -rs
+            python -m etl.build_reference_db --out assets/db/reference.sqlite --report-json etl/report.json
+            tag="refdb-v$(date -u +%Y%m%d)"
+            if gh release view "$tag" >/dev/null 2>&1; then tag="${tag}.${{ github.run_number }}"; fi
+            gh release create "$tag" assets/db/reference.sqlite assets/db/reference.sqlite.sha256 etl/report.json \
+              --target "${{ github.sha }}" \
+              --title "Base de alimentos $tag" \
+              --notes "Base de referencia de HumanOS (solo lectura). Fuentes: USDA FoodData Central (CC0) y Open Food Facts (ODbL)."
+          else
+            echo "Usando $tag"
+            gh release download "$tag" --dir assets/db --pattern 'reference.sqlite*' --clobber
+          fi
+          cd assets/db && sha256sum -c reference.sqlite.sha256
+
+      - name: Clave de firma
+        run: |
+          set -euo pipefail
+          key_dir="$RUNNER_TEMP/signing"
+          mkdir -p "$key_dir"
+          chmod 700 "$key_dir"
+          if gh release view signing-key >/dev/null 2>&1 && \
+             gh release download signing-key --pattern upload.jks.enc --dir "$key_dir" --clobber; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+              -in "$key_dir/upload.jks.enc" -out "$key_dir/upload.jks" -pass env:KEYSTORE_PASSWORD || {
+                echo "::error::No se pudo descifrar la clave: KEYSTORE_PASSWORD no es el mismo de la primera compilación."
+                exit 1
+              }
+          else
+            echo "Primera compilación: se crea la clave de firma."
+            keytool -genkeypair -keystore "$key_dir/upload.jks" -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" \
+              -dname "CN=Altair, O=HumanOS" >/dev/null
+            openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+              -in "$key_dir/upload.jks" -out "$key_dir/upload.jks.enc" -pass env:KEYSTORE_PASSWORD
+            if gh release view signing-key >/dev/null 2>&1; then
+              # Never overwrite: without --clobber the upload fails if it exists.
+              gh release upload signing-key "$key_dir/upload.jks.enc"
+            else
+              gh release create signing-key "$key_dir/upload.jks.enc" \
+                --target "${{ github.sha }}" \
+                --title "Clave de firma (cifrada)" \
+                --notes "Clave de firma de HumanOS cifrada con AES-256 (PBKDF2, 600000 iteraciones). Sin KEYSTORE_PASSWORD no sirve. No la borres: sin ella las próximas versiones no se podrán instalar encima."
+            fi
+            rm -f "$key_dir/upload.jks.enc"
+          fi
+          echo "KEYSTORE_PATH=$key_dir/upload.jks" >> "$GITHUB_ENV"
+
+      - run: flutter pub get
+
+      - name: Generar código (drift)
+        run: dart run build_runner build
+
+      - run: flutter test
+
+      - name: Compilar APK (release, uno por arquitectura)
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-name "3.0.${{ github.run_number }}" \
+            --build-number "${{ github.run_number }}"
+
+      - name: Publicar release
+        run: |
+          set -euo pipefail
+          tag="v3.0.${{ github.run_number }}"
+          gh release create "$tag" build/app/outputs/flutter-apk/app-*-release.apk \
+            --target "${{ github.sha }}" \
+            --title "HumanOS $tag" \
+            --notes "Instala app-arm64-v8a-release.apk (teléfonos modernos). La primera vez desinstala HumanOS v1: misma app, otra firma."
+          {
+            echo "## HumanOS $tag"
+            echo
+            echo "En **Releases → $tag** descarga e instala **app-arm64-v8a-release.apk**."
+            echo
+            echo "Si tenías HumanOS v1, desinstálala antes (misma app, otra firma)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Borrar la clave sin cifrar
+        if: always()
+        run: |
+          if [ -n "${KEYSTORE_PATH:-}" ] && [ -f "${KEYSTORE_PATH}" ]; then
+            shred -u "${KEYSTORE_PATH}"
+          fi
