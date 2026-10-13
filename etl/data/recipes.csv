@@ -1,0 +1,4 @@
+recipe_key,name_es,kind,ref,grams
+arepa,Arepa (harina de maíz precocida + agua + sal),product_query,harina maiz precocid,120
+arepa,Arepa (harina de maíz precocida + agua + sal),fdc,"Beverages, water, tap, drinking",150
+arepa,Arepa (harina de maíz precocida + agua + sal),fdc,"Salt, table",1.5
