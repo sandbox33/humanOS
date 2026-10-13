@@ -52,7 +52,7 @@ class _StreakBlock extends StatelessWidget {
         children: [
           Text(title, style: theme.textTheme.labelLarge),
           if (summary.broken) ...[
-            Text('MEJOR ${summary.best}', style: theme.textTheme.headlineMedium),
+            Text('MEJOR RACHA ${summary.best}', style: theme.textTheme.headlineMedium),
             Text('${summary.completedLast30} días cumplidos en 30', style: theme.textTheme.bodySmall),
           ] else ...[
             Text('${summary.current} DÍAS', style: theme.textTheme.headlineMedium),

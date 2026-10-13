@@ -58,7 +58,7 @@ jobs:
             echo "No hay release refdb-v*: se construye la base ahora (primera vez)."
             python -m pip install -r etl/requirements.txt
             python -m pytest etl/tests -rs
-            python -m etl.build_reference_db --out assets/db/reference.sqlite --report-json etl/report.json
+            python -m etl.build_reference_db --out assets/db/reference.sqlite --report-json etl/report.json --off-optional
             tag="refdb-v$(date -u +%Y%m%d)"
             if gh release view "$tag" >/dev/null 2>&1; then tag="${tag}.${{ github.run_number }}"; fi
             gh release create "$tag" assets/db/reference.sqlite assets/db/reference.sqlite.sha256 etl/report.json \

@@ -45,7 +45,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('MEJOR 5'), findsOneWidget);
+    expect(find.text('MEJOR RACHA 5'), findsOneWidget);
     expect(find.textContaining('días cumplidos en 30'), findsWidgets);
     expect(find.text('0 DÍAS'), findsNothing);
     expect(find.textContaining('MISIÓN MÍNIMA'), findsOneWidget);

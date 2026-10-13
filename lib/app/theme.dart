@@ -94,6 +94,11 @@ ThemeData buildTheme(AccentColor accentChoice) {
   );
   return base.copyWith(
     textTheme: textTheme,
+    // Screens switch instantly, like a terminal: no decorative transitions.
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: _InstantTransitions(),
+      TargetPlatform.linux: _InstantTransitions(),
+    }),
     appBarTheme: AppBarTheme(
       backgroundColor: HosColors.background,
       foregroundColor: accent,
@@ -201,4 +206,21 @@ ThemeData buildTheme(AccentColor accentChoice) {
       indicatorColor: accent,
     ),
   );
+}
+
+class _InstantTransitions extends PageTransitionsBuilder {
+  const _InstantTransitions();
+
+  @override
+  Duration get transitionDuration => Duration.zero;
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) =>
+      child;
 }

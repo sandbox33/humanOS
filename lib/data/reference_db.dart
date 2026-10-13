@@ -253,17 +253,20 @@ class ReferenceDb {
 
   NutrientProfile? profile(int foodId) => profiles([foodId])[foodId];
 
-  /// Per-100 g profiles for many foods in one pass.
+  /// Per-100 g profiles for many foods in one pass, keyed by FDC nutrient
+  /// id (the catalogue's own ids are not assumed to match).
   Map<int, NutrientProfile> profiles(Iterable<int> foodIds) {
     final list = foodIds.toSet().toList();
     final values = <int, Map<int, double>>{};
     for (var i = 0; i < list.length; i += 500) {
       final chunk = list.sublist(i, i + 500 > list.length ? list.length : i + 500);
       for (final r in _select(
-          'SELECT food_id, nutrient_id, amount_per_100g FROM food_nutrients '
-          'WHERE food_id IN (${List.filled(chunk.length, '?').join(',')})',
+          'SELECT fn.food_id, n.fdc_nutrient_id, fn.amount_per_100g '
+          'FROM food_nutrients fn JOIN nutrients n ON n.id = fn.nutrient_id '
+          'WHERE n.fdc_nutrient_id IS NOT NULL '
+          'AND fn.food_id IN (${List.filled(chunk.length, '?').join(',')})',
           chunk)) {
-        (values[r['food_id'] as int] ??= {})[r['nutrient_id'] as int] =
+        (values[r['food_id'] as int] ??= {})[r['fdc_nutrient_id'] as int] =
             _d(r['amount_per_100g'])!;
       }
     }

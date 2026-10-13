@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:humanos/data/backup_service.dart';
 import 'package:humanos/data/export_crypto.dart';
@@ -28,6 +28,9 @@ void main() {
   });
 
   test('every user table survives an export and restore', () async {
+    // Two independent in-memory databases on purpose (source and target).
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    addTearDown(() => driftRuntimeOptions.dontWarnAboutMultipleDatabases = false);
     final source = memoryUserDb();
     await seedIfNeeded(source);
     await source.into(source.bodyMetrics).insert(

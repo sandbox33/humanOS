@@ -1,3 +1,5 @@
+import pytest
+
 from etl.sources import off
 
 from .conftest import FIXTURE_OFF_LINES, OFF_HEADER, off_line
@@ -35,3 +37,15 @@ def test_duplicates_and_bad_barcodes_are_skipped():
     ]
     products = list(off.parse_lines(lines))
     assert [p.name for p in products] == ["A"]
+
+
+def test_off_download_failure_is_fatal_unless_optional(tmp_path):
+    from etl.build_reference_db import load_off
+
+    def failing(url, cache):
+        raise RuntimeError("sin red")
+
+    products, version = load_off("https://example.invalid/x.csv.gz", tmp_path, optional=True, downloader=failing)
+    assert products == [] and version is None
+    with pytest.raises(RuntimeError):
+        load_off("https://example.invalid/x.csv.gz", tmp_path, optional=False, downloader=failing)

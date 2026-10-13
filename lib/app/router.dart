@@ -75,8 +75,8 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     if (_started) return;
     _started = true;
     final settings = ref.read(settingsRepositoryProvider);
+    final notifications = ref.read(notificationServiceProvider);
     try {
-      final notifications = ref.read(notificationServiceProvider);
       await notifications.init();
       // Android 13+ asks once; the answer can be changed in AJUSTES.
       if (await settings.get(SettingKey.notificationsAsked) != '1') {
@@ -86,6 +86,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     } on Object {
       // Notifications unavailable: the app works without them.
     }
+    if (!mounted) return;
     await _refreshExternal();
     if (mounted) await rescheduleReminders(ref);
   }
@@ -93,9 +94,9 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   /// Health Connect (only after the user granted it once) and screen time.
   Future<void> _refreshExternal() async {
     final settings = ref.read(settingsRepositoryProvider);
-    if (await settings.get(SettingKey.healthGranted) == '1') {
-      await syncHealth(ref);
-    }
+    final granted = await settings.get(SettingKey.healthGranted) == '1';
+    if (!mounted) return;
+    if (granted) await syncHealth(ref);
     if (!mounted) return;
     await syncScreenTime(ref);
     if (mounted) await recordReadiness(ref);

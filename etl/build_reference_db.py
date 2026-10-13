@@ -603,16 +603,40 @@ def _insert_exercises(con: sqlite3.Connection, inputs: BuildInputs, report: Buil
     return len(inputs.exercises)
 
 
+def load_off(
+    url: str,
+    cache: Path,
+    *,
+    optional: bool,
+    downloader=download,
+) -> tuple[list[off.OffProduct], str | None]:
+    """Downloads and filters the Open Food Facts export.
+
+    With ``optional`` a failed download is reported and the build continues
+    without packaged products (the app still looks them up online).
+    """
+    try:
+        path = downloader(url, cache)
+    except (RuntimeError, OSError) as error:
+        if not optional:
+            raise
+        print(f"[aviso] Open Food Facts no disponible, se omite: {error}", file=sys.stderr)
+        return [], None
+    return off.load_products(path), dt.date.fromtimestamp(path.stat().st_mtime).isoformat()
+
+
 def default_inputs(args: argparse.Namespace) -> BuildInputs:
     cache = Path(args.cache)
     sr = fdc.load_sr_legacy(cache, args.sr_url)
     foundation = None if args.no_foundation else fdc.load_foundation(cache, args.foundation_url)
     products: list[off.OffProduct] = []
     off_version = None
-    if not args.skip_off:
-        path = Path(args.off_file) if args.off_file else download(args.off_url, cache)
+    if args.off_file:
+        path = Path(args.off_file)
         products = off.load_products(path)
         off_version = dt.date.fromtimestamp(path.stat().st_mtime).isoformat()
+    elif not args.skip_off:
+        products, off_version = load_off(args.off_url, cache, optional=args.off_optional)
     return BuildInputs(
         sr=sr,
         foundation=foundation,
@@ -638,6 +662,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-off", action="store_true")
     parser.add_argument("--off-url", default=off.OFF_CSV_URL)
     parser.add_argument("--off-file", default=None)
+    parser.add_argument(
+        "--off-optional",
+        action="store_true",
+        help="continúa sin productos si la descarga de Open Food Facts falla",
+    )
     parser.add_argument("--report-json", default=None)
     parser.add_argument("--non-strict", action="store_true")
     args = parser.parse_args(argv)
