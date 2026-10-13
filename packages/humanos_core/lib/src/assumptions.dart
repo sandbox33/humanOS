@@ -120,6 +120,8 @@ abstract final class A {
   static const tempoMinEccentricS = 'tempo_min_eccentric_s';
   static const tempoConcentricXS = 'tempo_concentric_x_s';
   static const tapDebounceMs = 'tap_debounce_ms';
+  static const restBetweenExercisesS = 'rest_between_exercises_s';
+  static const restPauseS = 'rest_pause_s';
   static const baselineRepTargetMin = 'baseline_rep_target_min';
   static const baselineRepTargetMax = 'baseline_rep_target_max';
   // Pantry scorer and day plan
@@ -874,6 +876,33 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.entrenamiento,
     titleEs: 'Antirrebote del contador',
     explainEs: 'Dos toques separados por menos de 0,35 s cuentan como uno.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.restBetweenExercisesS,
+    value: 120,
+    min: 30,
+    max: 600,
+    unitEs: 's',
+    group: AssumptionGroup.entrenamiento,
+    titleEs: 'Descanso entre ejercicios',
+    explainEs:
+        'Duración del temporizador entre ejercicios. Una sola serie por '
+        'ejercicio permite descansos cortos; súbelo si llegas sin aliento '
+        'a la siguiente.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.restPauseS,
+    value: 15,
+    min: 5,
+    max: 60,
+    unitEs: 's',
+    group: AssumptionGroup.entrenamiento,
+    titleEs: 'Pausa del rest-pause',
+    explainEs:
+        'Segundos de pausa tras el fallo antes de las repeticiones extra. '
+        'Solo en ejercicios seguros al fallo.',
     source: _model,
   ),
   AssumptionDef(

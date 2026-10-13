@@ -1,13 +1,23 @@
-import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:flutter/services.dart';
 
 /// Keeps the screen on during a Heavy Duty session.
 abstract class ScreenAwake {
   Future<void> keepOn(bool on);
 }
 
-class WakelockScreenAwake implements ScreenAwake {
+/// `FLAG_KEEP_SCREEN_ON` on the activity window through the app's own
+/// channel (`MainActivity.kt`), so no extra plugin is needed.
+class WindowScreenAwake implements ScreenAwake {
+  static const _channel = MethodChannel('com.altair.humanos/screen');
+
   @override
-  Future<void> keepOn(bool on) => WakelockPlus.toggle(enable: on);
+  Future<void> keepOn(bool on) async {
+    try {
+      await _channel.invokeMethod<void>('keepScreenOn', {'on': on});
+    } on MissingPluginException {
+      // Not on Android (widget tests): nothing to keep awake.
+    }
+  }
 }
 
 class NoopScreenAwake implements ScreenAwake {
