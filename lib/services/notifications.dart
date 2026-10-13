@@ -8,7 +8,9 @@ import 'package:timezone/timezone.dart' as tz;
 /// declared heat hours, and the next Heavy Duty day.
 abstract class NotificationService {
   Future<void> init();
-  Future<bool> requestPermissions();
+  /// Asks for notification permission; [exactAlarms] also opens the
+  /// system screen for exact alarms (reminders work inexactly without it).
+  Future<bool> requestPermissions({bool exactAlarms = false});
   Future<void> scheduleMeals(List<MealSlot> slots, {required bool enabled});
   Future<void> scheduleHydration({
     required DateTime from,
@@ -79,10 +81,10 @@ class LocalNotificationService implements NotificationService {
   }
 
   @override
-  Future<bool> requestPermissions() async {
+  Future<bool> requestPermissions({bool exactAlarms = false}) async {
     await init();
     final granted = await _android?.requestNotificationsPermission() ?? false;
-    await _android?.requestExactAlarmsPermission();
+    if (exactAlarms) await _android?.requestExactAlarmsPermission();
     return granted;
   }
 
@@ -169,7 +171,7 @@ class SilentNotificationService implements NotificationService {
   @override
   Future<void> init() async {}
   @override
-  Future<bool> requestPermissions() async => false;
+  Future<bool> requestPermissions({bool exactAlarms = false}) async => false;
   @override
   Future<void> scheduleMeals(List<MealSlot> slots, {required bool enabled}) async {}
   @override

@@ -73,8 +73,8 @@ jobs:
           cache: true
       - run: flutter --version
       - run: flutter pub get
-      - name: pubspec.lock resuelto
-        run: cat pubspec.lock
+      - name: pubspec.lock resuelto (gzip + base64)
+        run: echo "LOCK_B64=$(gzip -9c pubspec.lock | base64 -w0)"
       - name: Generar código (drift)
         run: dart run build_runner build
       - run: flutter analyze

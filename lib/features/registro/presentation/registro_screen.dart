@@ -84,6 +84,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
         ),
       ],
       floatingActionButton: FloatingActionButton.large(
+        heroTag: 'registro-add',
         tooltip: 'Añadir',
         onPressed: () => _add(iso, _currentBlock(slots, date)),
         child: const Icon(Icons.add),

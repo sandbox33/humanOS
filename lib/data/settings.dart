@@ -72,6 +72,7 @@ abstract final class SettingKey {
   /// Value shown in the first weigh-in dialog (seeded, editable there).
   static const weightPrefill = 'weight_prefill_kg';
   static const healthGranted = 'health_granted';
+  static const notificationsAsked = 'notifications_asked';
 }
 
 class SettingsRepository {

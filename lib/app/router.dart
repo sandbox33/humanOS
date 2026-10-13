@@ -74,8 +74,15 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   Future<void> _startup() async {
     if (_started) return;
     _started = true;
+    final settings = ref.read(settingsRepositoryProvider);
     try {
-      await ref.read(notificationServiceProvider).init();
+      final notifications = ref.read(notificationServiceProvider);
+      await notifications.init();
+      // Android 13+ asks once; the answer can be changed in AJUSTES.
+      if (await settings.get(SettingKey.notificationsAsked) != '1') {
+        await notifications.requestPermissions();
+        await settings.setBool(SettingKey.notificationsAsked, true);
+      }
     } on Object {
       // Notifications unavailable: the app works without them.
     }

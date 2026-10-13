@@ -91,11 +91,28 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `habits.source` | nullable column | auto-filled habits (protein, weigh-in, sleep…) |
 | user `sessions.mode` | `normal/deload/retest` | deload week and re-test must be remembered |
 | user `food_user_flags` | `user_excluded`, `user_trigger_reflux` | §5.2 user flags cannot live in the read-only DB |
-| user `app_settings` | key/value | accent colour, toggles, onboarding state |
+| user `app_settings` | key/value | accent colour, toggles, onboarding state, day-1 weight pre-fill (65 kg, editable, not a constant) |
+| user `daily_logs.intake_complete` | bool, default false | "DÍA COMPLETO": only confirmed days feed the adaptive TDEE |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
 SQLite (with FTS5) through build hooks, so the app depends on `drift`,
 `drift_flutter` and `sqlite3` instead.
+
+`wakelock_plus` (needs `dbus` 0.8) cannot be resolved together with
+`flutter_blue_plus` (pins `bluez` < 0.9, `dbus` 0.7); the session screen keeps
+the display on with `FLAG_KEEP_SCREEN_ON` through the app's own channel
+(`com.altair.humanos/screen`, `DeviceChannels.kt`). Screen time uses
+`com.altair.humanos/usage_stats` on the same file.
+
+`build_runner` 2.16 removed `--delete-conflicting-outputs`; workflows run
+`dart run build_runner build`.
+
+The Android project is generated in CI by `flutter create`; only these files
+are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
+`src/main/AndroidManifest.xml`, `src/main/kotlin/com/altair/humanos/*`,
+`res/drawable/ic_stat_humanos.xml`, `res/drawable/ic_launcher_foreground.xml`,
+`res/mipmap-anydpi-v26/ic_launcher.xml`, `res/values/ic_launcher_background.xml`,
+`res/raw/keep.xml`. `ci.yml` builds a debug-signed release APK as a check.
 
 ## Audit checkpoints
 

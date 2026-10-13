@@ -218,7 +218,7 @@ class _RemindersPanel extends ConsumerWidget {
           ),
           OutlinedButton(
             onPressed: () async {
-              final ok = await ref.read(notificationServiceProvider).requestPermissions();
+              final ok = await ref.read(notificationServiceProvider).requestPermissions(exactAlarms: true);
               if (ok) await rescheduleReminders(ref);
               if (context.mounted) {
                 toast(context, ok ? 'Avisos permitidos.' : 'Android no concedió el permiso.');
