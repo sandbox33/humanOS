@@ -2,7 +2,10 @@
 ///
 /// One working set per exercise. When every valid rep reaches `rep_max` the
 /// next load is `load + min_increment_kg` (assisted machines: less
-/// assistance). Two consecutive sessions below the previous one add rest
+/// assistance). When the reps overshoot the range (> rep_max + 5 or > 20)
+/// the load jumps to the e1RM-estimated load for 10 reps (Epley), rounded
+/// down to the available increment. Two consecutive sessions below the
+/// previous one add rest
 /// days; three start a deload week (RIR 2–3, never to failure) followed by a
 /// re-test. Sessions in ROJO, overridden, deload or re-test sessions are
 /// excluded from stall counting, and counting restarts after each re-test.
@@ -10,6 +13,7 @@ library;
 
 import 'assumptions.dart';
 import 'day.dart';
+import 'e1rm.dart';
 import 'format_es.dart';
 import 'readiness.dart';
 
@@ -151,6 +155,9 @@ class ProgressionParams {
     required this.warmup2Reps,
     required this.baselineRepMin,
     required this.baselineRepMax,
+    required this.jumpRepsOverMax,
+    required this.jumpRepsAbsolute,
+    required this.jumpTargetReps,
   });
 
   factory ProgressionParams.fromAssumptions(Assumptions a) => ProgressionParams(
@@ -168,6 +175,9 @@ class ProgressionParams {
     warmup2Reps: a.integer(A.warmup2Reps),
     baselineRepMin: a.integer(A.baselineRepTargetMin),
     baselineRepMax: a.integer(A.baselineRepTargetMax),
+    jumpRepsOverMax: a.integer(A.jumpRepsOverMax),
+    jumpRepsAbsolute: a.integer(A.jumpRepsAbsolute),
+    jumpTargetReps: a.integer(A.jumpTargetReps),
   );
 
   final int restDaysMin;
@@ -184,9 +194,12 @@ class ProgressionParams {
   final int warmup2Reps;
   final int baselineRepMin;
   final int baselineRepMax;
+  final int jumpRepsOverMax;
+  final int jumpRepsAbsolute;
+  final int jumpTargetReps;
 }
 
-enum ProgressionAction { start, increase, hold, deload, retest }
+enum ProgressionAction { start, increase, jump, hold, deload, retest }
 
 class ExerciseTarget {
   const ExerciseTarget({
@@ -330,6 +343,31 @@ ExerciseTarget nextExerciseTarget(
       messageEs:
           'Re-test tras la descarga: misma carga que la última sesión '
           'normal, intenta superarla.',
+    );
+  }
+
+  final overshoot =
+      last.validReps > spec.repMax + params.jumpRepsOverMax ||
+      last.validReps > params.jumpRepsAbsolute;
+  if (overshoot && !spec.assisted && !spec.timed && spec.minIncrementKg > 0) {
+    final e1rm = epleyE1rm(last.loadKg, last.validReps)!;
+    final raw = e1rm / (1 + params.jumpTargetReps / epleyDivisor);
+    var load =
+        (raw / spec.minIncrementKg).floorToDouble() * spec.minIncrementKg;
+    if (load <= last.loadKg) load = last.loadKg + spec.minIncrementKg;
+    return ExerciseTarget(
+      exerciseId: spec.id,
+      action: ProgressionAction.jump,
+      loadKg: load,
+      repTarget: spec.repMin,
+      stallCount: stalls,
+      previousBest: best,
+      rirTarget: rir,
+      messageEs:
+          'Hiciste ${last.validReps} repeticiones: la carga se quedó corta. '
+          'Salta a ${formatDecimal(load)} kg (tu 1RM estimado de '
+          '${formatDecimal(e1rm)} kg da unas ${params.jumpTargetReps} '
+          'repeticiones).',
     );
   }
 

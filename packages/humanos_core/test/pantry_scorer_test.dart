@@ -1,4 +1,6 @@
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/assumptions.dart';
+import 'package:humanos_core/src/confidence.dart';
+import 'package:humanos_core/src/pantry_scorer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -122,5 +124,15 @@ void main() {
     );
     expect(scored.first.candidate.key, 'cheap');
     expect(explainScore(scored.first), contains('Densidad nutricional'));
+  });
+
+  test('cost per 10 g of protein', () {
+    // Eggs at 4,00 USD/kg with 12,6 g protein/100 g → 0,317 USD per 10 g.
+    expect(
+      costPer10gProtein(priceUsdPerKg: 4, proteinPer100g: 12.6),
+      closeTo(0.3175, 1e-4),
+    );
+    expect(costPer10gProtein(priceUsdPerKg: null, proteinPer100g: 12), isNull);
+    expect(costPer10gProtein(priceUsdPerKg: 3, proteinPer100g: 0), isNull);
   });
 }

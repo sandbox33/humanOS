@@ -1,15 +1,24 @@
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/assumptions.dart';
+import 'package:humanos_core/src/attributes.dart';
+import 'package:humanos_core/src/day.dart';
+import 'package:humanos_core/src/readiness.dart';
 import 'package:test/test.dart';
 
 void main() {
   final p = AttributeParams.fromAssumptions(Assumptions.defaults());
   final today = DateTime.utc(2026, 10, 12);
 
+  test('missing inputs give null, never zero', () {
+    final a = computeAttributes(AttributeInputs(today: today), p);
+    expect(a.keys, AttributeKind.values);
+    expect(a.values.every((v) => v == null), isTrue);
+  });
+
   test('FUERZA = Σ current e1RM / Σ baseline × 100', () {
     final a = computeAttributes(
       AttributeInputs(
         today: today,
-        e1rmBaseline: const {1: 100, 2: 50},
+        e1rmBaseline: const {1: 100, 2: 50, 3: 40},
         e1rmCurrent: const {1: 120, 2: 60},
       ),
       p,
@@ -17,38 +26,113 @@ void main() {
     expect(a[AttributeKind.fuerza], closeTo(120, 1e-9));
   });
 
-  test('RESISTENCIA = shifts with hydration ≥ 80 %', () {
+  test('RESISTENCIA = mean of shifts logged and reminders acknowledged', () {
     final a = computeAttributes(
       AttributeInputs(
         today: today,
-        shifts: [
-          ShiftHydration(date: today, plannedL: 3, drankL: 2.5),
-          ShiftHydration(date: addDays(today, -1), plannedL: 3, drankL: 1.5),
-          ShiftHydration(date: addDays(today, -2), plannedL: 3, drankL: null),
-          ShiftHydration(date: addDays(today, -40), plannedL: 3, drankL: 3),
+        shiftDays: [
+          ShiftDay(
+            date: today,
+            logged: true,
+            remindersSent: 2,
+            remindersAcked: 2,
+          ),
+          ShiftDay(
+            date: addDays(today, -1),
+            logged: false,
+            remindersSent: 2,
+            remindersAcked: 0,
+          ),
+          ShiftDay(
+            date: addDays(today, -40),
+            logged: true,
+            remindersSent: 2,
+            remindersAcked: 2,
+          ),
         ],
       ),
       p,
     );
+    // logged 1/2, acknowledged 2/4 → 50
     expect(a[AttributeKind.resistencia], closeTo(50, 1e-9));
   });
 
-  test('RECUPERACIÓN from sleep and RHR', () {
+  test('RESISTENCIA without reminders uses only the logged share', () {
+    final a = computeAttributes(
+      AttributeInputs(
+        today: today,
+        shiftDays: [
+          ShiftDay(date: today, logged: true),
+          ShiftDay(date: addDays(today, -1), logged: true),
+          ShiftDay(date: addDays(today, -2), logged: false),
+          ShiftDay(date: addDays(today, -3), logged: true),
+        ],
+      ),
+      p,
+    );
+    expect(a[AttributeKind.resistencia], closeTo(75, 1e-9));
+  });
+
+  test('NUTRICIÓN counts complete days hitting kcal ±10 % and protein', () {
+    NutritionDay day(int back, double kcal, double protein) => NutritionDay(
+      date: addDays(today, -back),
+      kcal: kcal,
+      kcalTarget: 2800,
+      proteinG: protein,
+      proteinTargetG: 120,
+    );
+    final a = computeAttributes(
+      AttributeInputs(
+        today: today,
+        nutritionDays: [
+          day(0, 2800, 125), // hit
+          day(1, 2550, 110), // kcal −8.9 %, protein 91.7 % → hit
+          day(2, 2400, 130), // kcal −14 % → miss
+          day(3, 2900, 100), // protein 83 % → miss
+          day(45, 2800, 120), // outside the window
+        ],
+      ),
+      p,
+    );
+    expect(a[AttributeKind.nutricion], closeTo(50, 1e-9));
+  });
+
+  test('a day without targets never counts as a hit', () {
+    expect(
+      nutritionDayHit(
+        NutritionDay(
+          date: today,
+          kcal: 0,
+          kcalTarget: 0,
+          proteinG: 0,
+          proteinTargetG: 0,
+        ),
+        0.1,
+      ),
+      isFalse,
+    );
+  });
+
+  test('RECUPERACIÓN from sleep and readiness bands', () {
     final a = computeAttributes(
       AttributeInputs(
         today: today,
         sleepHoursLast7: const [8, 8, 6, 6],
-        rhrRecentMean: 57,
-        rhrBaselineMean: 55,
-        rhrBaselineSd: 2,
+        readinessBands: {
+          today: ReadinessBand.verde,
+          addDays(today, -1): ReadinessBand.amarillo,
+          addDays(today, -2): ReadinessBand.rojo,
+          addDays(today, -3): ReadinessBand.verde,
+          addDays(today, -90): ReadinessBand.rojo,
+        },
       ),
       p,
     );
-    // sleep 7/8 = 0.875; rhr 1 − 2/(2×2) = 0.5 → mean 0.6875
-    expect(a[AttributeKind.recuperacion], closeTo(68.75, 1e-9));
+    // sleep 7/8 = 0.875; readiness (1 + 0.5 + 0 + 1) / 4 = 0.625 → 75
+    expect(a[AttributeKind.recuperacion], closeTo(75, 1e-9));
   });
 
-  test('DISCIPLINA from sober, screen limit and minimum days', () {
+  test('DISCIPLINA from minimum days, sobriety and screen limit', () {
     final a = computeAttributes(
       AttributeInputs(
         today: today,
@@ -66,26 +150,36 @@ void main() {
             screenMinutes: 90,
             minimumMet: true,
           ),
+          DisciplineDay(date: addDays(today, -2)),
         ],
       ),
       p,
     );
-    expect(
-      a[AttributeKind.disciplina],
-      closeTo((0.5 + 0.5 + 1) / 3 * 100, 1e-9),
-    );
+    // minimum 2/2, sober 1/2, screen 1/2 → (1 + 0.5 + 0.5) / 3
+    expect(a[AttributeKind.disciplina], closeTo(66.6667, 1e-3));
   });
 
-  test('no data gives null, never zero', () {
-    final a = computeAttributes(AttributeInputs(today: today), p);
-    expect(a.values.every((v) => v == null), isTrue);
-  });
-
-  test('attributesUp lists real increases only', () {
+  test('attributesUp lists only real increases', () {
     final up = attributesUp(
-      {AttributeKind.fuerza: 100, AttributeKind.disciplina: 80},
-      {AttributeKind.fuerza: 104, AttributeKind.disciplina: 79},
+      {
+        AttributeKind.fuerza: 100,
+        AttributeKind.nutricion: 40,
+        AttributeKind.disciplina: null,
+      },
+      {
+        AttributeKind.fuerza: 102,
+        AttributeKind.nutricion: 40.5,
+        AttributeKind.disciplina: 80,
+      },
     );
     expect(up, [AttributeKind.fuerza]);
+  });
+
+  test('codes round-trip and labels carry accents', () {
+    for (final kind in AttributeKind.values) {
+      expect(AttributeKind.parse(kind.code), kind);
+    }
+    expect(AttributeKind.nutricion.labelEs, 'NUTRICIÓN');
+    expect(AttributeKind.parse('X'), isNull);
   });
 }

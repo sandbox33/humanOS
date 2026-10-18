@@ -1,4 +1,4 @@
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/lp_simplex.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -53,7 +53,11 @@ void main() {
     expect(s.values[0], greaterThanOrEqualTo(3 - 1e-9));
   });
 
-  const open = DietParams(maxEnergyShare: 1.0, fatMaxFrac: 1.0);
+  const open = DietParams(
+    maxEnergyShare: 1.0,
+    fatMaxFrac: 1.0,
+    kcalOvershootFrac: 0.1,
+  );
 
   test('two-food diet with a known optimum', () {
     // A: 4 kcal/g, no protein, 0.002 USD/g. B: 1.5 kcal/g, 0.25 g/g,
@@ -140,7 +144,7 @@ void main() {
     expect(plan.bindingEs.single, startsWith('proteína'));
   });
 
-  test('beverages and foods without price are excluded and listed', () {
+  test('beverages are excluded and listed', () {
     final plan = planDiet(
       foods: const [
         DietFood(
@@ -153,11 +157,10 @@ void main() {
           isBeverage: true,
         ),
         DietFood(
-          key: 'eggs',
-          name: 'Huevos',
+          key: 'mystery',
+          name: 'Sin datos',
           maxGrams: 600,
-          kcalPerG: 1.4,
-          proteinPerG: 0.125,
+          costUsdPerG: 0.001,
         ),
       ],
       targets: const DietTargets(
@@ -169,6 +172,109 @@ void main() {
     );
     expect(plan.status, DietStatus.noCandidates);
     expect(plan.excludedEs.length, 2);
+    expect(plan.costUsd, isNull);
+  });
+
+  group('without prices the plan maximises the score', () {
+    const foods = [
+      DietFood(
+        key: 'eggs',
+        name: 'Huevos',
+        maxGrams: 600,
+        kcalPerG: 1.43,
+        proteinPerG: 0.126,
+        score: 1.2,
+      ),
+      DietFood(
+        key: 'rice',
+        name: 'Arroz',
+        maxGrams: 1000,
+        kcalPerG: 1.3,
+        proteinPerG: 0.027,
+        score: 0.4,
+      ),
+      DietFood(
+        key: 'cookies',
+        name: 'Galletas',
+        maxGrams: 500,
+        kcalPerG: 4.8,
+        proteinPerG: 0.06,
+        score: -0.8,
+      ),
+    ];
+    const targets = DietTargets(
+      kcalMin: 1000,
+      proteinMinG: 60,
+      sodiumMaxMg: 2300,
+    );
+
+    test('works with no prices entered and prefers high scores', () {
+      final plan = planDiet(foods: foods, targets: targets, params: open);
+      expect(plan.status, DietStatus.optimal);
+      expect(plan.objective, DietObjective.score);
+      expect(plan.costUsd, isNull);
+      expect(plan.kcal, greaterThanOrEqualTo(1000 - 1e-6));
+      expect(plan.kcal, lessThanOrEqualTo(1100 + 1e-6));
+      expect(plan.proteinG, greaterThanOrEqualTo(60 - 1e-6));
+      expect(plan.gramsByKey.containsKey('cookies'), isFalse);
+      expect(plan.messageEs, contains('sin precios'));
+    });
+
+    test('one missing price drops cost for the whole plan', () {
+      final mixed = [
+        ...foods
+            .take(2)
+            .map(
+              (f) => DietFood(
+                key: f.key,
+                name: f.name,
+                maxGrams: f.maxGrams,
+                kcalPerG: f.kcalPerG,
+                proteinPerG: f.proteinPerG,
+                score: f.score,
+                costUsdPerG: 0.002,
+              ),
+            ),
+        foods[2],
+      ];
+      final plan = planDiet(foods: mixed, targets: targets, params: open);
+      expect(plan.objective, DietObjective.score);
+    });
+
+    test('the kcal margin is named when protein needs more energy', () {
+      final plan = planDiet(
+        foods: const [
+          DietFood(
+            key: 'rice',
+            name: 'Arroz',
+            maxGrams: 5000,
+            kcalPerG: 1.3,
+            proteinPerG: 0.027,
+            score: 0.4,
+          ),
+          DietFood(
+            key: 'potato',
+            name: 'Papa',
+            maxGrams: 5000,
+            kcalPerG: 0.77,
+            proteinPerG: 0.02,
+            score: 0.5,
+          ),
+          DietFood(
+            key: 'pasta',
+            name: 'Fideo',
+            maxGrams: 5000,
+            kcalPerG: 1.58,
+            proteinPerG: 0.058,
+            score: 0.3,
+          ),
+        ],
+        targets: targets,
+        params: open,
+      );
+      expect(plan.status, DietStatus.infeasible);
+      expect(plan.bindingEs.join(' '), contains('kcal'));
+    });
   });
 
   test('energy share cap keeps one food under 35 %', () {
@@ -220,7 +326,11 @@ void main() {
         proteinMinG: 110,
         sodiumMaxMg: 2300,
       ),
-      params: const DietParams(maxEnergyShare: 0.35, fatMaxFrac: 0.35),
+      params: const DietParams(
+        maxEnergyShare: 0.35,
+        fatMaxFrac: 0.35,
+        kcalOvershootFrac: 0.1,
+      ),
     );
     expect(plan.status, DietStatus.optimal);
     for (final e in plan.gramsByKey.entries) {

@@ -11,7 +11,8 @@ library;
 enum AssumptionGroup {
   energia('ENERGÍA'),
   macros('MACRONUTRIENTES'),
-  hidratacion('HIDRATACIÓN Y SODIO'),
+  perfil('PERFIL INICIAL'),
+  hidratacion('HIDRATACIÓN'),
   recuperacion('RECUPERACIÓN'),
   entrenamiento('HEAVY DUTY'),
   despensa('DESPENSA Y PLAN'),
@@ -19,7 +20,12 @@ enum AssumptionGroup {
   interacciones('INTERACCIONES'),
   seguridad('SEGURIDAD ALIMENTARIA'),
   horario('HORARIO DE COMIDAS'),
-  atributos('ATRIBUTOS');
+  atributos('ATRIBUTOS'),
+  avisos('AVISOS Y CONTEXTO'),
+  gamificacion('NIVELES Y XP'),
+  mente('MENTE'),
+  cuant('LABORATORIO CUANT'),
+  toxcheck('TOX-CHECK');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -70,8 +76,18 @@ abstract final class A {
   static const targetStepMaxKcal = 'target_step_max_kcal';
   static const palWorkday = 'pal_workday';
   static const palOffday = 'pal_offday';
-  static const bootstrapSurplusKcal = 'bootstrap_surplus_kcal';
   static const referenceShiftHours = 'reference_shift_hours';
+  // Starting profile (onboarding priors)
+  static const surplusEctoKcal = 'surplus_ecto_kcal';
+  static const surplusMesoKcal = 'surplus_meso_kcal';
+  static const surplusEndoKcal = 'surplus_endo_kcal';
+  static const surplusUnknownKcal = 'surplus_unknown_kcal';
+  static const palJobModerate = 'pal_job_moderate';
+  static const palJobDesk = 'pal_job_desk';
+  static const maintainRateMinKgWeek = 'maintain_rate_min_kg_week';
+  static const maintainRateMaxKgWeek = 'maintain_rate_max_kg_week';
+  static const loseRateMinKgWeek = 'lose_rate_min_kg_week';
+  static const loseRateMaxKgWeek = 'lose_rate_max_kg_week';
   // Macros
   static const proteinGPerKg = 'protein_g_per_kg';
   static const proteinGPerKgFloor = 'protein_g_per_kg_floor';
@@ -81,15 +97,15 @@ abstract final class A {
   static const proteinPlanTolerance = 'protein_plan_tolerance';
   static const fatKcalFraction = 'fat_kcal_fraction';
   // Hydration
-  static const sweatReplaceMinFrac = 'sweat_replace_min_frac';
-  static const sweatReplaceMaxFrac = 'sweat_replace_max_frac';
-  static const fluidCapLPerH = 'fluid_cap_l_per_h';
   static const heatBolusL = 'heat_bolus_l';
+  static const fluidCapLPerH = 'fluid_cap_l_per_h';
+  static const sweatFeelPocoFactor = 'sweat_feel_poco_factor';
+  static const sweatFeelNormalFactor = 'sweat_feel_normal_factor';
+  static const sweatFeelMuchoFactor = 'sweat_feel_mucho_factor';
+  static const sweatFeelDays = 'sweat_feel_days';
+  static const hydrationPreShiftLeadMin = 'hydration_pre_shift_lead_min';
   static const heatBolusIntervalMinMin = 'heat_bolus_interval_min_min';
   static const heatBolusIntervalMaxMin = 'heat_bolus_interval_max_min';
-  static const sweatNaMmolL = 'sweat_na_mmol_l';
-  static const bodyMassLossWarnPct = 'body_mass_loss_warn_pct';
-  static const hydrationGoalFraction = 'hydration_goal_fraction';
   static const heatThresholdC = 'heat_threshold_c';
   // Recovery
   static const hrvShortDays = 'hrv_short_days';
@@ -104,6 +120,7 @@ abstract final class A {
   static const sleepTargetH = 'sleep_target_h';
   static const sleepDebtMaxH = 'sleep_debt_max_h';
   static const sleepDebtNights = 'sleep_debt_nights';
+  static const feelLowThreshold = 'feel_low_threshold';
   // Training
   static const restDaysMin = 'rest_days_min';
   static const restDaysMax = 'rest_days_max';
@@ -124,6 +141,9 @@ abstract final class A {
   static const restPauseS = 'rest_pause_s';
   static const baselineRepTargetMin = 'baseline_rep_target_min';
   static const baselineRepTargetMax = 'baseline_rep_target_max';
+  static const jumpRepsOverMax = 'jump_reps_over_max';
+  static const jumpRepsAbsolute = 'jump_reps_absolute';
+  static const jumpTargetReps = 'jump_target_reps';
   // Pantry scorer and day plan
   static const wNrfPerUsd = 'w_nrf_per_usd';
   static const wProteinQuality = 'w_protein_quality';
@@ -137,6 +157,7 @@ abstract final class A {
   static const sodiumLimitMg = 'sodium_limit_mg';
   static const lpMaxEnergyShare = 'lp_max_energy_share';
   static const lpFatMaxFrac = 'lp_fat_max_frac';
+  static const lpKcalOvershootFrac = 'lp_kcal_overshoot_frac';
   // Habits
   static const globalStreakThreshold = 'global_streak_threshold';
   static const minimumRequiredEssentials = 'minimum_required_essentials';
@@ -170,7 +191,50 @@ abstract final class A {
   static const splitDinner = 'split_dinner';
   // Attributes
   static const attrWindowDays = 'attr_window_days';
-  static const attrRhrZeroSd = 'attr_rhr_zero_sd';
+  static const attrNutritionTolerance = 'attr_nutrition_tolerance';
+  // Notifications and context
+  static const tipsMaxPerDay = 'tips_max_per_day';
+  static const quietFromH = 'quiet_from_h';
+  static const quietToH = 'quiet_to_h';
+  static const stressSdThreshold = 'stress_sd_threshold';
+  static const stressBaselineDays = 'stress_baseline_days';
+  static const stressMinBaselineSamples = 'stress_min_baseline_samples';
+  static const stressWorkoutMarginMin = 'stress_workout_margin_min';
+  // XP and levels
+  static const xpMealLogged = 'xp_meal_logged';
+  static const xpMealCap = 'xp_meal_cap';
+  static const xpWeighIn = 'xp_weigh_in';
+  static const xpSession = 'xp_session';
+  static const xpPr = 'xp_pr';
+  static const xpPrCap = 'xp_pr_cap';
+  static const xpMinimumDay = 'xp_minimum_day';
+  static const xpShiftLogged = 'xp_shift_logged';
+  static const xpHydrationAck = 'xp_hydration_ack';
+  static const xpCheckIn = 'xp_check_in';
+  static const xpMindCorrect = 'xp_mind_correct';
+  static const xpMindCap = 'xp_mind_cap';
+  static const xpMindReflection = 'xp_mind_reflection';
+  static const xpReflectionCap = 'xp_reflection_cap';
+  static const xpQuantExperiment = 'xp_quant_experiment';
+  static const xpQuantCap = 'xp_quant_cap';
+  static const levelBaseXp = 'level_base_xp';
+  static const levelExponent = 'level_exponent';
+  static const pipchamoStreakDays = 'pipchamo_streak_days';
+  // Mind
+  static const mindEloK = 'mind_elo_k';
+  static const mindStartRating = 'mind_start_rating';
+  static const mindTargetSuccess = 'mind_target_success';
+  static const mindRetryDays = 'mind_retry_days';
+  // Quant lab
+  static const quantCostBps = 'quant_cost_bps';
+  static const quantDsrThreshold = 'quant_dsr_threshold';
+  static const quantTrainBars = 'quant_train_bars';
+  static const quantTestBars = 'quant_test_bars';
+  static const quantBootstrapBlock = 'quant_bootstrap_block';
+  static const quantBootstrapSamples = 'quant_bootstrap_samples';
+  static const quantBarsPerYear = 'quant_bars_per_year';
+  // Tox-Check
+  static const fluorideToothpasteMaxPpm = 'fluoride_toothpaste_max_ppm';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -278,10 +342,11 @@ const List<AssumptionDef> assumptionCatalog = [
     min: 1.2,
     max: 2.5,
     group: AssumptionGroup.energia,
-    titleEs: 'Factor de actividad en día de taller',
+    titleEs: 'Actividad: trabajo manual pesado',
     explainEs:
-        'Arranque: gasto basal de Mifflin × 1,9 en día de trabajo '
-        '(soldadura de pie, 10 h, y entrenamiento después del turno).',
+        'Arranque: gasto basal de Mifflin × 1,9 en día de trabajo manual '
+        'pesado (por ejemplo soldadura de pie, 10 h, y entrenamiento '
+        'después del turno).',
     source:
         'Mifflin MD y col., Am J Clin Nutr 1990;51:241–247 (fórmula). '
         'Factor: supuesto',
@@ -294,24 +359,12 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.energia,
     titleEs: 'Factor de actividad en día libre',
     explainEs:
-        'Arranque: gasto basal de Mifflin × 1,6 en día libre. Un día '
-        'libre no es reposo absoluto: caminas, cocinas, entrenas.',
+        'Arranque: gasto basal de Mifflin × 1,6 en día libre (nunca más '
+        'que en un día de trabajo). Un día libre no es reposo absoluto: '
+        'caminas, cocinas, entrenas.',
     source:
         'Mifflin MD y col., Am J Clin Nutr 1990;51:241–247 (fórmula). '
         'Factor: supuesto',
-  ),
-  AssumptionDef(
-    key: A.bootstrapSurplusKcal,
-    value: 300,
-    min: 0,
-    max: 1000,
-    unitEs: 'kcal',
-    group: AssumptionGroup.energia,
-    titleEs: 'Superávit de arranque',
-    explainEs:
-        'Mientras no hay 14 días completos, el objetivo es el gasto '
-        'estimado con Mifflin más 300 kcal.',
-    source: _model,
   ),
   AssumptionDef(
     key: A.referenceShiftHours,
@@ -326,6 +379,118 @@ const List<AssumptionDef> assumptionCatalog = [
         'o más largo, solo se escala la parte de actividad del gasto; el '
         'gasto basal no cambia con las horas trabajadas.',
     source: _v1,
+  ),
+  AssumptionDef(
+    key: A.surplusEctoKcal,
+    value: 400,
+    min: 0,
+    max: 800,
+    unitEs: 'kcal',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Superávit inicial: ecto',
+    explainEs:
+        'Si tu meta es ganar y marcaste ectomorfo, el objetivo de arranque suma 400 kcal. El somatotipo es descriptivo y su evidencia es débil: tras 14 días válidos el gasto real lo reemplaza.',
+    source: 'Prior de arranque (evidencia débil)',
+  ),
+  AssumptionDef(
+    key: A.surplusMesoKcal,
+    value: 300,
+    min: 0,
+    max: 800,
+    unitEs: 'kcal',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Superávit inicial: meso',
+    explainEs: 'Mesomorfo con meta de ganar: +300 kcal al arranque.',
+    source: 'Prior de arranque (evidencia débil)',
+  ),
+  AssumptionDef(
+    key: A.surplusEndoKcal,
+    value: 200,
+    min: 0,
+    max: 800,
+    unitEs: 'kcal',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Superávit inicial: endo',
+    explainEs: 'Endomorfo con meta de ganar: +200 kcal al arranque.',
+    source: 'Prior de arranque (evidencia débil)',
+  ),
+  AssumptionDef(
+    key: A.surplusUnknownKcal,
+    value: 300,
+    min: 0,
+    max: 800,
+    unitEs: 'kcal',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Superávit inicial: no sé',
+    explainEs: 'Sin somatotipo elegido: +300 kcal al arranque.',
+    source: 'Prior de arranque (evidencia débil)',
+  ),
+  AssumptionDef(
+    key: A.palJobModerate,
+    value: 1.6,
+    min: 1.2,
+    max: 2.4,
+    group: AssumptionGroup.perfil,
+    titleEs: 'Actividad: trabajo moderado',
+    explainEs:
+        'Multiplicador del metabolismo basal en días de trabajo moderado (de pie, cargas ligeras).',
+    source: 'FAO/WHO/UNU 2004, niveles de actividad física',
+  ),
+  AssumptionDef(
+    key: A.palJobDesk,
+    value: 1.4,
+    min: 1.2,
+    max: 2.4,
+    group: AssumptionGroup.perfil,
+    titleEs: 'Actividad: trabajo de escritorio',
+    explainEs: 'Multiplicador para trabajo sentado.',
+    source: 'FAO/WHO/UNU 2004, niveles de actividad física',
+  ),
+  AssumptionDef(
+    key: A.maintainRateMinKgWeek,
+    value: -0.05,
+    min: -0.3,
+    max: 0,
+    unitEs: 'kg/sem',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Mantener: ritmo mínimo',
+    explainEs:
+        'Con meta «mantener», el ajuste semanal apunta a un cambio entre −0,05 y +0,05 kg por semana.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.maintainRateMaxKgWeek,
+    value: 0.05,
+    min: 0,
+    max: 0.3,
+    unitEs: 'kg/sem',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Mantener: ritmo máximo',
+    explainEs: 'Límite superior del ritmo para «mantener».',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.loseRateMinKgWeek,
+    value: -0.5,
+    min: -1.5,
+    max: 0,
+    unitEs: 'kg/sem',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Perder: ritmo más rápido',
+    explainEs:
+        'Con meta «perder», el ajuste apunta a bajar entre 0,25 y 0,5 kg por semana (alrededor de 0,5–1 % del peso), para proteger el músculo.',
+    source: 'Helms et al. 2014, J Int Soc Sports Nutr 11:20',
+  ),
+  AssumptionDef(
+    key: A.loseRateMaxKgWeek,
+    value: -0.25,
+    min: -1.5,
+    max: 0,
+    unitEs: 'kg/sem',
+    group: AssumptionGroup.perfil,
+    titleEs: 'Perder: ritmo más lento',
+    explainEs: 'Límite más lento del ritmo para «perder».',
+    source: 'Helms et al. 2014, J Int Soc Sports Nutr 11:20',
   ),
   // ------------------------------------------------------------ MACROS
   AssumptionDef(
@@ -420,53 +585,16 @@ const List<AssumptionDef> assumptionCatalog = [
   ),
   // ------------------------------------------------------- HIDRATACIÓN
   AssumptionDef(
-    key: A.sweatReplaceMinFrac,
-    value: 0.8,
-    min: 0.5,
-    max: 1.0,
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Reposición mínima del sudor',
-    explainEs:
-        'Con prueba de sudor se planifica reponer entre el 80 % y el '
-        '100 % de lo que pierdes por hora.',
-    source: _model,
-  ),
-  AssumptionDef(
-    key: A.sweatReplaceMaxFrac,
-    value: 1.0,
-    min: 0.5,
-    max: 1.2,
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Reposición máxima del sudor',
-    explainEs:
-        'Extremo alto del plan: reponer el 100 % de la tasa de sudor, '
-        'siempre por debajo del tope por hora.',
-    source: _model,
-  ),
-  AssumptionDef(
-    key: A.fluidCapLPerH,
-    value: 1.42,
-    min: 0.5,
-    max: 1.5,
-    unitEs: 'L/h',
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Tope de líquido por hora',
-    explainEs:
-        'No más de 1,42 L por hora (1,5 cuartos de galón). Más que eso '
-        'no se absorbe y aumenta el riesgo de hiponatremia.',
-    source: 'Ejército de EE. UU., TB MED 507 (trabajo en calor)',
-  ),
-  AssumptionDef(
     key: A.heatBolusL,
     value: 0.24,
     min: 0.1,
     max: 0.5,
     unitEs: 'L',
     group: AssumptionGroup.hidratacion,
-    titleEs: 'Toma sin prueba de sudor',
+    titleEs: 'Taza de referencia',
     explainEs:
-        'Sin prueba de sudor: 0,24 L (una taza) cada 15–20 minutos '
-        'mientras estés al calor.',
+        'Base del plan del termo: 0,24 L (una taza) cada 15–20 minutos '
+        'de calor. Es un rango orientativo, no una receta.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
@@ -477,7 +605,8 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'min',
     group: AssumptionGroup.hidratacion,
     titleEs: 'Intervalo corto entre tomas',
-    explainEs: 'Intervalo más frecuente del plan sin prueba de sudor.',
+    explainEs:
+        'Con tomas cada 15 min sale el extremo alto del rango del termo.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
@@ -489,48 +618,23 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.hidratacion,
     titleEs: 'Intervalo largo entre tomas',
     explainEs:
-        'Intervalo menos frecuente del plan sin prueba de sudor. '
-        'También marca los avisos de hidratación (cada 20 min).',
+        'Con tomas cada 20 min sale el extremo bajo del rango del termo. '
+        'Durante el turno no hay avisos: el rango se muestra antes de '
+        'entrar y en el almuerzo.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
-    key: A.sweatNaMmolL,
-    value: 40,
-    min: 10,
-    max: 100,
-    unitEs: 'mmol/L',
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Sodio en el sudor',
-    explainEs:
-        'Concentración típica asumida: 40 mmol/L. Varía mucho entre '
-        'personas (de ~10 a ~90 mmol/L). Sodio a reponer = litros × mmol/L × '
-        '23 mg. El potasio no se calcula a partir del sodio.',
-    source: 'Baker LB. Sports Med 2017;47(Supl 1):111–128',
-  ),
-  AssumptionDef(
-    key: A.bodyMassLossWarnPct,
-    value: 2.0,
+    key: A.fluidCapLPerH,
+    value: 1.42,
     min: 0.5,
-    max: 5,
-    unitEs: '%',
+    max: 1.5,
+    unitEs: 'L/h',
     group: AssumptionGroup.hidratacion,
-    titleEs: 'Pérdida de peso que dispara aviso',
+    titleEs: 'Tope de líquido por hora',
     explainEs:
-        'Perder más del 2 % del peso corporal durante el turno empeora '
-        'el rendimiento y el juicio con calor.',
-    source: 'ACSM, Med Sci Sports Exerc 2007;39:377–390 (Sawka y col.)',
-  ),
-  AssumptionDef(
-    key: A.hydrationGoalFraction,
-    value: 0.80,
-    min: 0.5,
-    max: 1.0,
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Cumplimiento de hidratación',
-    explainEs:
-        'Un turno cuenta como bien hidratado si bebiste al menos el '
-        '80 % del plan del termo.',
-    source: _model,
+        'El rango nunca pasa de 1,42 L por hora (1,5 cuartos de galón). '
+        'Más que eso no se absorbe y aumenta el riesgo de hiponatremia.',
+    source: 'Ejército de EE. UU., TB MED 507 (trabajo en calor)',
   ),
   AssumptionDef(
     key: A.heatThresholdC,
@@ -544,6 +648,62 @@ const List<AssumptionDef> assumptionCatalog = [
         'Por encima de 32 °C (90 °F) la comida cocinada fuera de la '
         'nevera tiene solo 1 h de margen. Es la pregunta «¿estuvo al calor?».',
     source: 'USDA FSIS, «Danger Zone» (40 °F–140 °F)',
+  ),
+  AssumptionDef(
+    key: A.sweatFeelPocoFactor,
+    value: 0.8,
+    min: 0.3,
+    max: 1.0,
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Sudé poco: factor del plan',
+    explainEs:
+        'Si en tus últimos turnos marcaste «poco», el rango del termo se multiplica por 0,8.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelNormalFactor,
+    value: 1.0,
+    min: 0.5,
+    max: 1.5,
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Sudé normal: factor del plan',
+    explainEs: '«Normal» deja el rango base tal cual.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelMuchoFactor,
+    value: 1.2,
+    min: 1.0,
+    max: 2.0,
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Sudé mucho: factor del plan',
+    explainEs:
+        'Si marcaste «mucho», el rango se multiplica por 1,2. El sudor cambia con el clima y la tarea: por eso es un rango, no una receta.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelDays,
+    value: 7,
+    min: 3,
+    max: 28,
+    unitEs: 'días',
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Días de sensación de sudor',
+    explainEs:
+        'El factor usa la media de lo que marcaste en los últimos 7 días.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.hydrationPreShiftLeadMin,
+    value: 30,
+    min: 5,
+    max: 120,
+    unitEs: 'min',
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Aviso antes del turno',
+    explainEs:
+        'El aviso «llena el termo» llega 30 min antes de entrar. Durante el turno no hay avisos, salvo en el almuerzo.',
+    source: _model,
   ),
   // ------------------------------------------------------- RECUPERACIÓN
   AssumptionDef(
@@ -699,6 +859,18 @@ const List<AssumptionDef> assumptionCatalog = [
     titleEs: 'Noches para la deuda de sueño',
     explainEs: 'Número de noches que se suman para la deuda.',
     source: _v1,
+  ),
+  AssumptionDef(
+    key: A.feelLowThreshold,
+    value: 2,
+    min: 1,
+    max: 4,
+    unitEs: 'de 5',
+    group: AssumptionGroup.recuperacion,
+    titleEs: 'Sensación matinal baja',
+    explainEs:
+        'Si al despertar marcas 2 o menos (de 1 a 5), esa señal cuenta como AMARILLO.',
+    source: _model,
   ),
   // -------------------------------------------------------- HEAVY DUTY
   AssumptionDef(
@@ -929,6 +1101,41 @@ const List<AssumptionDef> assumptionCatalog = [
     explainEs: 'Extremo alto del objetivo de la sesión base.',
     source: _model,
   ),
+  AssumptionDef(
+    key: A.jumpRepsOverMax,
+    value: 5,
+    min: 1,
+    max: 20,
+    unitEs: 'reps',
+    group: AssumptionGroup.entrenamiento,
+    titleEs: 'Salto de carga: reps sobre el máximo',
+    explainEs:
+        'Si haces 5 o más repeticiones por encima del máximo del rango, la carga era demasiado ligera: la próxima se calcula con tu 1RM estimado.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.jumpRepsAbsolute,
+    value: 20,
+    min: 10,
+    max: 50,
+    unitEs: 'reps',
+    group: AssumptionGroup.entrenamiento,
+    titleEs: 'Salto de carga: reps totales',
+    explainEs: 'Más de 20 repeticiones también dispara el salto de carga.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.jumpTargetReps,
+    value: 10,
+    min: 6,
+    max: 15,
+    unitEs: 'reps',
+    group: AssumptionGroup.entrenamiento,
+    titleEs: 'Salto de carga: reps objetivo',
+    explainEs:
+        'La nueva carga es la que tu 1RM estimado (Epley) da para 10 repeticiones, redondeada a tus discos. Diez es el extremo prudente del rango 8–10.',
+    source: 'Epley 1985',
+  ),
   // ---------------------------------------------------------- DESPENSA
   AssumptionDef(
     key: A.wNrfPerUsd,
@@ -1070,6 +1277,18 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.despensa,
     titleEs: 'Máximo de grasa en el plan',
     explainEs: 'La grasa del plan no pasa del 35 % de las kcal objetivo.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.lpKcalOvershootFrac,
+    value: 0.10,
+    min: 0,
+    max: 0.5,
+    group: AssumptionGroup.despensa,
+    titleEs: 'Margen de kcal del plan sin precios',
+    explainEs:
+        'Sin precios, el plan busca la mejor puntuación sin pasar de las '
+        'kcal que faltan más un 10 %, para no llenarte de comida.',
     source: _model,
   ),
   // ------------------------------------------------------------ HÁBITOS
@@ -1416,22 +1635,457 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.atributos,
     titleEs: 'Ventana de atributos',
     explainEs:
-        'RESISTENCIA y DISCIPLINA se calculan sobre los últimos 30 '
-        'días con datos.',
+        'RESISTENCIA, NUTRICIÓN, RECUPERACIÓN y DISCIPLINA se calculan '
+        'sobre los últimos 30 días con datos.',
     source: _model,
   ),
   AssumptionDef(
-    key: A.attrRhrZeroSd,
-    value: 2,
-    min: 0.5,
-    max: 5,
-    unitEs: 'DE',
+    key: A.attrNutritionTolerance,
+    value: 0.10,
+    min: 0.02,
+    max: 0.3,
     group: AssumptionGroup.atributos,
-    titleEs: 'RECUPERACIÓN: FC en reposo que da cero',
+    titleEs: 'NUTRICIÓN: margen del día cumplido',
     explainEs:
-        'Si tu FC en reposo de la semana está 2 desviaciones estándar '
-        'por encima de tu media, esa parte de RECUPERACIÓN vale 0.',
+        'Un día cuenta para NUTRICIÓN si las kcal quedan a ±10 % de tu '
+        'objetivo y la proteína llega al menos al 90 %.',
     source: _model,
+  ),
+  AssumptionDef(
+    key: A.tipsMaxPerDay,
+    value: 3,
+    min: 0,
+    max: 3,
+    group: AssumptionGroup.avisos,
+    titleEs: 'Consejos por día',
+    explainEs:
+        'Como máximo 3 avisos de consejo al día, y nunca durante el turno salvo en el almuerzo.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quietFromH,
+    value: 21,
+    min: 18,
+    max: 24,
+    unitEs: 'h',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Silencio desde',
+    explainEs:
+        'Desde las 21:00 no llegan consejos ni preguntas de contexto. Los '
+        'avisos del termo siguen tu turno.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quietToH,
+    value: 6,
+    min: 3,
+    max: 10,
+    unitEs: 'h',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Silencio hasta',
+    explainEs: 'Hasta las 06:00 no llegan consejos ni preguntas de contexto.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.stressSdThreshold,
+    value: 2,
+    min: 1.5,
+    max: 4,
+    unitEs: 'DE',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Pulso alto fuera de ejercicio',
+    explainEs:
+        'Solo si tu dispositivo comparte pulso fuera del ejercicio: si está 2 desviaciones por encima de tu base para esa hora, sin entreno y fuera del taller, la app te pregunta qué pasaba (una vez al día como máximo).',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.stressBaselineDays,
+    value: 28,
+    min: 14,
+    max: 60,
+    unitEs: 'días',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Base de pulso por hora',
+    explainEs:
+        'La base de cada hora del día se calcula con los últimos 28 días.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.stressMinBaselineSamples,
+    value: 10,
+    min: 5,
+    max: 60,
+    group: AssumptionGroup.avisos,
+    titleEs: 'Muestras mínimas por hora',
+    explainEs: 'Hacen falta 10 lecturas de esa hora para comparar.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.stressWorkoutMarginMin,
+    value: 30,
+    min: 0,
+    max: 120,
+    unitEs: 'min',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Margen tras el ejercicio',
+    explainEs:
+        'El pulso de los 30 min después de un entreno no cuenta como '
+        'pulso alto: es la recuperación normal.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMealLogged,
+    value: 5,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por comida registrada',
+    explainEs:
+        'Cada comida registrada da 5 XP, hasta 4 por día. Solo cuentan acciones reales: nada al azar.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMealCap,
+    value: 4,
+    min: 0,
+    max: 10,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Tope diario de comidas con XP',
+    explainEs: 'Máximo de comidas que dan XP en un día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpWeighIn,
+    value: 10,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por pesarte',
+    explainEs: 'Un pesaje al día da 10 XP.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpSession,
+    value: 60,
+    min: 0,
+    max: 200,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por sesión completa',
+    explainEs: 'Guardar una sesión de Heavy Duty da 60 XP (una por día).',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpPr,
+    value: 25,
+    min: 0,
+    max: 100,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por récord',
+    explainEs:
+        'Cada récord real (1RM estimado o repeticiones con la misma carga) da 25 XP.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpPrCap,
+    value: 3,
+    min: 0,
+    max: 10,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Tope de récords con XP',
+    explainEs: 'Máximo de récords con XP en un día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMinimumDay,
+    value: 20,
+    min: 0,
+    max: 100,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por cumplir el mínimo',
+    explainEs: 'Cumplir el mínimo del día da 20 XP.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpShiftLogged,
+    value: 10,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por registrar el turno',
+    explainEs: 'Registrar esfuerzo y sudor del turno da 10 XP.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpHydrationAck,
+    value: 5,
+    min: 0,
+    max: 30,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por confirmar el agua',
+    explainEs:
+        'Confirmar el aviso del termo (antes del turno y en el almuerzo) da 5 XP cada uno.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpCheckIn,
+    value: 5,
+    min: 0,
+    max: 30,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por la sensación matinal',
+    explainEs: 'Responder cómo amaneciste da 5 XP al día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMindCorrect,
+    value: 8,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por respuesta correcta en MENTE',
+    explainEs: 'Cada reto acertado da 8 XP, hasta 10 al día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMindCap,
+    value: 10,
+    min: 0,
+    max: 30,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Tope diario de retos con XP',
+    explainEs: 'Máximo de retos acertados con XP en un día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpMindReflection,
+    value: 6,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por explicar tu razonamiento',
+    explainEs:
+        'Explicar con tus palabras por qué respondiste así da 6 XP, hasta 3 al día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpReflectionCap,
+    value: 3,
+    min: 0,
+    max: 10,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Tope de explicaciones con XP',
+    explainEs: 'Máximo de explicaciones con XP por día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpQuantExperiment,
+    value: 12,
+    min: 0,
+    max: 50,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP por experimento cuantitativo',
+    explainEs:
+        'Correr un experimento en el laboratorio da 12 XP, hasta 3 al día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.xpQuantCap,
+    value: 3,
+    min: 0,
+    max: 10,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Tope de experimentos con XP',
+    explainEs: 'Máximo de experimentos con XP por día.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.levelBaseXp,
+    value: 120,
+    min: 50,
+    max: 1000,
+    unitEs: 'XP',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'XP del nivel 2',
+    explainEs:
+        'Pasar al nivel 2 cuesta 120 XP; cada nivel cuesta más que el anterior.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.levelExponent,
+    value: 2.1,
+    min: 1.2,
+    max: 3,
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Dureza de la curva de niveles',
+    explainEs:
+        'El XP acumulado para el nivel n es 120 × (n − 1)^2,1: el nivel 10 pide unos 12 000 XP, meses de constancia real.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.pipchamoStreakDays,
+    value: 7,
+    min: 3,
+    max: 30,
+    unitEs: 'días',
+    group: AssumptionGroup.gamificacion,
+    titleEs: 'Pipchamo «en racha»',
+    explainEs:
+        'Con 7 días seguidos de mínimo cumplido, Pipchamo aparece en racha. '
+        'Refleja tus datos, no es un premio.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.mindEloK,
+    value: 24,
+    min: 8,
+    max: 64,
+    group: AssumptionGroup.mente,
+    titleEs: 'Velocidad de ajuste de tu nivel',
+    explainEs:
+        'Tras cada reto tu puntuación de esa habilidad sube o baja hasta 24 puntos, según lo difícil que era.',
+    source: 'Elo 1978, sistema de puntuación',
+  ),
+  AssumptionDef(
+    key: A.mindStartRating,
+    value: 1000,
+    min: 600,
+    max: 1600,
+    group: AssumptionGroup.mente,
+    titleEs: 'Puntuación inicial',
+    explainEs: 'Cada habilidad empieza en 1000 y se ajusta con tus respuestas.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.mindTargetSuccess,
+    value: 0.65,
+    min: 0.4,
+    max: 0.9,
+    group: AssumptionGroup.mente,
+    titleEs: 'Dificultad buscada',
+    explainEs:
+        'Los retos se eligen para que aciertes cerca del 65 %: ni fáciles ni imposibles.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.mindRetryDays,
+    value: 3,
+    min: 1,
+    max: 30,
+    unitEs: 'días',
+    group: AssumptionGroup.mente,
+    titleEs: 'Repetir lo fallado',
+    explainEs: 'Un reto fallado vuelve a aparecer a los 3 días.',
+    source: 'Repetición espaciada (Cepeda et al. 2006)',
+  ),
+  AssumptionDef(
+    key: A.quantCostBps,
+    value: 10,
+    min: 0,
+    max: 200,
+    unitEs: 'pb',
+    group: AssumptionGroup.cuant,
+    titleEs: 'Costo por operación',
+    explainEs:
+        'Cada cambio de posición paga 10 puntos básicos (0,10 %) entre comisión y deslizamiento. Sin costos casi todo parece rentable.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quantDsrThreshold,
+    value: 0.95,
+    min: 0.5,
+    max: 0.999,
+    group: AssumptionGroup.cuant,
+    titleEs: 'Umbral del Sharpe deflactado',
+    explainEs:
+        'Una estrategia solo se considera prometedora si la probabilidad de que su Sharpe real sea positivo, corrigiendo por todo lo que probaste, supera 0,95.',
+    source: 'Bailey y López de Prado 2014, J Portfolio Management 40(5)',
+  ),
+  AssumptionDef(
+    key: A.quantTrainBars,
+    value: 504,
+    min: 100,
+    max: 2520,
+    unitEs: 'barras',
+    group: AssumptionGroup.cuant,
+    titleEs: 'Ventana de entrenamiento',
+    explainEs:
+        'En la validación caminante se elige el parámetro con 504 barras (unos 2 años diarios) y se prueba en las siguientes.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quantTestBars,
+    value: 126,
+    min: 20,
+    max: 1260,
+    unitEs: 'barras',
+    group: AssumptionGroup.cuant,
+    titleEs: 'Ventana de prueba',
+    explainEs:
+        'Cada tramo fuera de muestra dura 126 barras (unos 6 meses diarios).',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quantBootstrapBlock,
+    value: 20,
+    min: 5,
+    max: 120,
+    unitEs: 'barras',
+    group: AssumptionGroup.cuant,
+    titleEs: 'Bloque del bootstrap',
+    explainEs:
+        'El intervalo del Sharpe remuestrea bloques de 20 barras para respetar la autocorrelación.',
+    source: 'Politis y Romano 1994',
+  ),
+  AssumptionDef(
+    key: A.quantBootstrapSamples,
+    value: 500,
+    min: 100,
+    max: 5000,
+    group: AssumptionGroup.cuant,
+    titleEs: 'Remuestreos del bootstrap',
+    explainEs: 'Número de remuestreos para el intervalo de confianza.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quantBarsPerYear,
+    value: 252,
+    min: 12,
+    max: 8760,
+    unitEs: 'barras',
+    group: AssumptionGroup.cuant,
+    titleEs: 'Barras por año',
+    explainEs:
+        'Para anualizar: 252 sesiones bursátiles al año en datos diarios (365 para cripto).',
+    source: _model,
+  ),
+  // ---------------------------------------------------------- TOX-CHECK
+  AssumptionDef(
+    key: A.fluorideToothpasteMaxPpm,
+    value: 1500,
+    min: 1000,
+    max: 1500,
+    unitEs: 'ppm',
+    group: AssumptionGroup.toxcheck,
+    titleEs: 'Flúor máximo en pasta dental',
+    explainEs:
+        'Hasta 1500 ppm de flúor la pasta dental es VERDE para adultos, con '
+        'una nota para menores de 6 años. Por encima pasa a ÁMBAR: supera el '
+        'límite de los cosméticos en la UE y se usa solo por indicación '
+        'del odontólogo.',
+    source:
+        'Reglamento (CE) 1223/2009, anexo III (0,15 % F); SCCP, opinión '
+        'sobre compuestos de flúor en higiene oral infantil',
   ),
 ];
 

@@ -403,3 +403,17 @@ String explainScore(ScoredCandidate s) {
       })
       .join(' · ');
 }
+
+/// Cost of 10 g of protein in USD (rescued from v1): price per gram over
+/// protein per gram, times 10. Null when the price or the protein is
+/// unknown or zero.
+double? costPer10gProtein({
+  required double? priceUsdPerKg,
+  required double? proteinPer100g,
+}) {
+  if (priceUsdPerKg == null || proteinPer100g == null) return null;
+  if (priceUsdPerKg <= 0 || proteinPer100g <= 0) return null;
+  final usdPerG = priceUsdPerKg / 1000;
+  final proteinPerG = proteinPer100g / 100;
+  return usdPerG / proteinPerG * 10;
+}

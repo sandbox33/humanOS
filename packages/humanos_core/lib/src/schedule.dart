@@ -226,3 +226,15 @@ DayEnergy dailyEnergyTarget({
       );
   }
 }
+
+/// Meal blocks of [slots] with nothing logged yet. Past blocks still count:
+/// a late log is better than none.
+int mealsRemaining(List<MealSlot> slots, Set<MealBlock> loggedBlocks) =>
+    slots.where((s) => !loggedBlocks.contains(s.block)).length;
+
+/// Exact count for the copy rule: "faltan 2 comidas", never "bastan".
+String mealsRemainingEs(int remaining) => switch (remaining) {
+  <= 0 => 'Comidas del día registradas',
+  1 => 'Falta 1 comida',
+  _ => 'Faltan $remaining comidas',
+};

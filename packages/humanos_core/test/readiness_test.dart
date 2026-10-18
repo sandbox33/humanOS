@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/assumptions.dart';
+import 'package:humanos_core/src/confidence.dart';
+import 'package:humanos_core/src/day.dart';
+import 'package:humanos_core/src/readiness.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -142,5 +145,135 @@ void main() {
       expect(ReadinessBand.parse(b.code), b);
     }
     expect(WorkEffort.parse('HIGH'), WorkEffort.high);
+  });
+
+  group('capability-aware inputs', () {
+    const band9 = ReadinessCapabilities(
+      hrv: false,
+      restingHr: false,
+      sleep: true,
+    );
+
+    test('Band 9 via Mi Fitness: sleep, feel, effort and performance only', () {
+      final r = assessReadiness(
+        [
+          DailyRecovery(
+            date: today,
+            sleepMinutes: 420,
+            morningFeel: 4,
+            workEffort: WorkEffort.medium,
+          ),
+        ],
+        today: today,
+        params: p,
+        capabilities: band9,
+        performanceDrop: false,
+      );
+      expect(r.band, ReadinessBand.verde);
+      expect(r.path, ReadinessPath.none);
+      final hrv = r.input(ReadinessInputKind.hrv)!;
+      expect(hrv.status, ReadinessInputStatus.unavailable);
+      expect(hrv.detailEs, 'VFC: no disponible con tu dispositivo');
+      expect(
+        r.input(ReadinessInputKind.restingHr)!.status,
+        ReadinessInputStatus.unavailable,
+      );
+      final used = r.inputs
+          .where((i) => i.status == ReadinessInputStatus.used)
+          .map((i) => i.kind)
+          .toSet();
+      expect(used, {
+        ReadinessInputKind.sleep,
+        ReadinessInputKind.sleepDebt,
+        ReadinessInputKind.effort,
+        ReadinessInputKind.feel,
+        ReadinessInputKind.performance,
+      });
+      expect(r.confidence, Confidence.media);
+    });
+
+    test(
+      'unknown capability with no data reads as missing, not unavailable',
+      () {
+        final r = assessReadiness(const [], today: today, params: p);
+        expect(
+          r.input(ReadinessInputKind.hrv)!.status,
+          ReadinessInputStatus.missing,
+        );
+        expect(r.inputs, hasLength(ReadinessInputKind.values.length));
+        expect(r.confidence, Confidence.baja);
+      },
+    );
+
+    test('morning feel ≤ 2/5 flags AMARILLO', () {
+      final r = assessReadiness(
+        [DailyRecovery(date: today, morningFeel: 2)],
+        today: today,
+        params: p,
+        capabilities: band9,
+      );
+      expect(r.flags, [ReadinessFlag.lowFeel]);
+      expect(r.band, ReadinessBand.amarillo);
+      expect(r.input(ReadinessInputKind.feel)!.flagged, isTrue);
+    });
+
+    test('a feel of 3/5 or an out-of-range value does not flag', () {
+      for (final feel in [3, 0, 9]) {
+        final r = assessReadiness(
+          [DailyRecovery(date: today, morningFeel: feel, sleepMinutes: 480)],
+          today: today,
+          params: p,
+        );
+        expect(r.flags, isEmpty, reason: 'feel $feel');
+      }
+    });
+
+    test(
+      'reps below the previous session flag AMARILLO; with low feel ROJO',
+      () {
+        final one = assessReadiness(
+          const [],
+          today: today,
+          params: p,
+          performanceDrop: true,
+        );
+        expect(one.noData, isFalse);
+        expect(one.flags, [ReadinessFlag.performanceDrop]);
+        expect(one.band, ReadinessBand.amarillo);
+
+        final two = assessReadiness(
+          [DailyRecovery(date: today, morningFeel: 1)],
+          today: today,
+          params: p,
+          performanceDrop: true,
+        );
+        expect(two.band, ReadinessBand.rojo);
+        expect(two.suggestPostpone, isTrue);
+      },
+    );
+
+    test('HRV path with enough inputs reaches alta confidence', () {
+      final rng = math.Random(3);
+      final r = assessReadiness(
+        [
+          for (var i = 0; i < 60; i++)
+            DailyRecovery(
+              date: d(i),
+              hrvRmssdMs: 60 + rng.nextDouble() * 4 - 2,
+              sleepMinutes: 450,
+              morningFeel: i == 0 ? 4 : null,
+            ),
+        ],
+        today: today,
+        params: p,
+        performanceDrop: false,
+      );
+      expect(r.path, ReadinessPath.hrv);
+      expect(
+        r.input(ReadinessInputKind.hrv)!.status,
+        ReadinessInputStatus.used,
+      );
+      expect(r.confidence, Confidence.alta);
+    });
   });
 }

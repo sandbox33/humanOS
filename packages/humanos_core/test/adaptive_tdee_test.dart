@@ -1,4 +1,6 @@
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/adaptive_tdee.dart';
+import 'package:humanos_core/src/assumptions.dart';
+import 'package:humanos_core/src/day.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -170,5 +172,109 @@ void main() {
       mifflinBmr(weightKg: 60, heightCm: 160, ageYears: 30, sex: Sex.female),
       closeTo(600 + 1000 - 150 - 161, 1e-9),
     );
+  });
+
+  group('goals and starting priors', () {
+    TdeeEstimate est({required double tdee, required double ratePerWeek}) =>
+        TdeeEstimate(
+          tdeeKcal: tdee,
+          validDays: 21,
+          requiredDays: 14,
+          slopeKgPerDay: ratePerWeek / 7,
+          trendKg: 66,
+          meanIntakeKcal: tdee,
+          reasonEs: '',
+        );
+    final bmr = mifflinBmr(
+      weightKg: 65,
+      heightCm: 171,
+      ageYears: 25,
+      sex: Sex.male,
+    );
+
+    test('ecto gaining starts at Mifflin × 1.9 + 400', () {
+      expect(
+        bootstrapTargetKcal(
+          bmr: bmr,
+          workday: true,
+          params: params,
+          goal: Goal.ganar,
+          somatotype: Somatotype.ecto,
+        ),
+        closeTo(bmr * 1.9 + 400, 1e-9),
+      );
+    });
+
+    test('somatotype surplus applies only when gaining', () {
+      for (final (soma, kcal) in [
+        (Somatotype.ecto, 400.0),
+        (Somatotype.meso, 300.0),
+        (Somatotype.endo, 200.0),
+        (Somatotype.noSe, 300.0),
+      ]) {
+        expect(
+          bootstrapGoalKcal(goal: Goal.ganar, somatotype: soma, params: params),
+          kcal,
+        );
+        expect(
+          bootstrapGoalKcal(
+            goal: Goal.mantener,
+            somatotype: soma,
+            params: params,
+          ),
+          0,
+        );
+      }
+      // Losing: middle of −0.5…−0.25 kg/week × 7700 / 7 ≈ −412.5 kcal.
+      expect(
+        bootstrapGoalKcal(
+          goal: Goal.perder,
+          somatotype: Somatotype.ecto,
+          params: params,
+        ),
+        closeTo(-0.375 * 7700 / 7, 1e-9),
+      );
+    });
+
+    test('PAL follows the job type and off days never exceed it', () {
+      expect(dayPal(workday: true, job: JobType.heavy, params: params), 1.9);
+      expect(dayPal(workday: false, job: JobType.heavy, params: params), 1.6);
+      expect(dayPal(workday: true, job: JobType.moderate, params: params), 1.6);
+      expect(dayPal(workday: true, job: JobType.desk, params: params), 1.4);
+      expect(dayPal(workday: false, job: JobType.desk, params: params), 1.4);
+    });
+
+    test('the weekly review aims at the band of the goal', () {
+      final keep = weeklyTargetAdjustment(
+        currentTargetKcal: 2600,
+        estimate: est(tdee: 2600, ratePerWeek: 0.02),
+        params: params,
+        goal: Goal.mantener,
+      );
+      expect(keep.changed, isFalse);
+      final lose = weeklyTargetAdjustment(
+        currentTargetKcal: 2600,
+        estimate: est(tdee: 2600, ratePerWeek: 0),
+        params: params,
+        goal: Goal.perder,
+      );
+      expect(lose.stepKcal, -150);
+      expect(lose.reasonEs, contains('baja'));
+    });
+
+    test('profile codes round-trip with safe defaults', () {
+      for (final g in Goal.values) {
+        expect(Goal.parse(g.code), g);
+      }
+      for (final s in Somatotype.values) {
+        expect(Somatotype.parse(s.code), s);
+      }
+      for (final j in JobType.values) {
+        expect(JobType.parse(j.code), j);
+      }
+      expect(Goal.parse(null), Goal.ganar);
+      expect(Somatotype.parse('x'), Somatotype.noSe);
+      expect(JobType.parse(null), JobType.heavy);
+    });
   });
 }

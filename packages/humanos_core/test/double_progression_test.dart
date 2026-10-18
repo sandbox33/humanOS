@@ -1,4 +1,7 @@
-import 'package:humanos_core/humanos_core.dart';
+import 'package:humanos_core/src/assumptions.dart';
+import 'package:humanos_core/src/day.dart';
+import 'package:humanos_core/src/double_progression.dart';
+import 'package:humanos_core/src/readiness.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -250,5 +253,77 @@ void main() {
     expect(ramp.map((s) => s.loadKg), [60, 90]);
     expect(ramp.map((s) => s.reps), [8, 3]);
     expect(warmupRamp(spec: dips, targetLoadKg: 30, params: p), isEmpty);
+  });
+
+  group('load jump when reps overshoot the range', () {
+    test('reps > rep_max + 5 jump to the e1RM load for 10 reps', () {
+      // 21 reps at 100 kg: Epley e1RM = 100 × (1 + 21/30) = 170 kg;
+      // load for 10 reps = 170 / (1 + 10/30) = 127.5 → floor to 125 kg.
+      final t = nextExerciseTarget(
+        press,
+        [session(0, 100, 21)],
+        mode: SessionMode.normal,
+        params: p,
+      );
+      expect(t.action, ProgressionAction.jump);
+      expect(t.loadKg, 125);
+      expect(t.repTarget, press.repMin);
+      expect(t.messageEs, contains('21 repeticiones'));
+      expect(t.messageEs, contains('125'));
+    });
+
+    test('more than 20 reps also jumps even inside rep_max + 5', () {
+      const wide = ExerciseSpec(
+        id: 9,
+        nameEs: 'Curl',
+        repMin: 12,
+        repMax: 20,
+        minIncrementKg: 2.5,
+        failureSafe: true,
+      );
+      final t = nextExerciseTarget(
+        wide,
+        [session(0, 20, 22, spec: wide)],
+        mode: SessionMode.normal,
+        params: p,
+      );
+      expect(t.action, ProgressionAction.jump);
+      // 20 × (1 + 22/30) = 34.67; / (4/3) = 26.0 → 25 kg
+      expect(t.loadKg, 25);
+    });
+
+    test('exactly rep_max + 5 is a normal increase', () {
+      final t = nextExerciseTarget(
+        press,
+        [session(0, 100, 20)],
+        mode: SessionMode.normal,
+        params: p,
+      );
+      expect(t.action, ProgressionAction.increase);
+      expect(t.loadKg, 105);
+    });
+
+    test('assisted exercises never jump', () {
+      final t = nextExerciseTarget(
+        dips,
+        [session(0, 40, 25, spec: dips)],
+        mode: SessionMode.normal,
+        params: p,
+      );
+      expect(t.action, ProgressionAction.increase);
+      expect(t.loadKg, 35);
+    });
+
+    test('the jump is always at least one increment above', () {
+      final light = Assumptions.defaults().copyWith({A.jumpTargetReps: 6});
+      final t = nextExerciseTarget(
+        press,
+        [session(0, 5, 21)],
+        mode: SessionMode.normal,
+        params: ProgressionParams.fromAssumptions(light),
+      );
+      expect(t.action, ProgressionAction.jump);
+      expect(t.loadKg, greaterThan(5));
+    });
   });
 }

@@ -1,7 +1,11 @@
 /// Linear programming (two-phase simplex with Bland's rule) and the day
-/// plan built on it: minimise cost subject to kcal ≥ target, protein ≥
-/// target, sodium ≤ limit (+ sweat sodium), fat ≤ cap and grams ≤ stock.
-/// When infeasible, a diagnostic names the binding constraint.
+/// plan built on it, subject to kcal ≥ target, protein ≥ target, sodium ≤
+/// limit, fat ≤ cap and grams ≤ stock. Price is optional: when every
+/// candidate has a price the plan is the cheapest one; otherwise cost is
+/// dropped and the plan maximises the pantry score (weighted by the kcal
+/// each food brings) without exceeding the kcal target by more than the
+/// overshoot margin. When infeasible, a diagnostic names the binding
+/// constraint.
 library;
 
 import 'assumptions.dart';
@@ -214,6 +218,7 @@ class DietFood {
     this.proteinPerG,
     this.sodiumMgPerG,
     this.fatPerG,
+    this.score,
     this.isBeverage = false,
   });
 
@@ -227,6 +232,9 @@ class DietFood {
   final double? proteinPerG;
   final double? sodiumMgPerG;
   final double? fatPerG;
+
+  /// Pantry score ("MEJOR OPCIÓN AHORA"); null counts as neutral.
+  final double? score;
 
   /// Beverages never fill a plate on their own (v1 contract).
   final bool isBeverage;
@@ -242,27 +250,43 @@ class DietTargets {
   final double kcalMin;
   final double proteinMinG;
 
-  /// 2300 mg plus the sodium lost in sweat today.
+  /// Daily sodium limit for what is still to be eaten.
   final double sodiumMaxMg;
 }
 
 class DietParams {
-  const DietParams({required this.maxEnergyShare, required this.fatMaxFrac});
+  const DietParams({
+    required this.maxEnergyShare,
+    required this.fatMaxFrac,
+    required this.kcalOvershootFrac,
+  });
 
   factory DietParams.fromAssumptions(Assumptions a) => DietParams(
     maxEnergyShare: a[A.lpMaxEnergyShare],
     fatMaxFrac: a[A.lpFatMaxFrac],
+    kcalOvershootFrac: a[A.lpKcalOvershootFrac],
   );
 
   final double maxEnergyShare;
   final double fatMaxFrac;
+  final double kcalOvershootFrac;
 }
 
 enum DietStatus { optimal, infeasible, noCandidates, nothingNeeded }
 
+/// What the plan optimises.
+enum DietObjective {
+  /// Every candidate has a price: cheapest plan.
+  cost,
+
+  /// Some price is missing: best pantry score, cost ignored.
+  score,
+}
+
 class DietPlan {
   const DietPlan({
     required this.status,
+    required this.objective,
     required this.gramsByKey,
     required this.costUsd,
     required this.kcal,
@@ -276,8 +300,11 @@ class DietPlan {
   });
 
   final DietStatus status;
+  final DietObjective objective;
   final Map<String, double> gramsByKey;
-  final double costUsd;
+
+  /// Cost of the plan; null when the plan was built without prices.
+  final double? costUsd;
   final double kcal;
   final double proteinG;
 
@@ -298,7 +325,8 @@ class _Candidate {
   final double upper;
 }
 
-/// Cheapest plan that meets [targets] with what is in the pantry.
+/// Plan that meets [targets] with what is in the pantry: the cheapest when
+/// every candidate has a price, the best-scored otherwise.
 DietPlan planDiet({
   required List<DietFood> foods,
   required DietTargets targets,
@@ -312,10 +340,6 @@ DietPlan planDiet({
       excluded.add('${f.name}: bebida (no llena el plato sola).');
       continue;
     }
-    if (f.costUsdPerG == null) {
-      excluded.add('${f.name}: sin precio.');
-      continue;
-    }
     if (f.kcalPerG == null || f.proteinPerG == null) {
       excluded.add('${f.name}: sin dato de kcal o proteína.');
       continue;
@@ -327,11 +351,18 @@ DietPlan planDiet({
     candidates.add(_Candidate(f, upper < 0 ? 0 : upper));
   }
 
+  final objective =
+      candidates.isNotEmpty &&
+          candidates.every((c) => c.food.costUsdPerG != null)
+      ? DietObjective.cost
+      : DietObjective.score;
+
   if (targets.kcalMin <= 0 && targets.proteinMinG <= 0) {
     return DietPlan(
       status: DietStatus.nothingNeeded,
+      objective: objective,
       gramsByKey: const {},
-      costUsd: 0,
+      costUsd: null,
       kcal: 0,
       proteinG: 0,
       sodiumMg: 0,
@@ -345,8 +376,9 @@ DietPlan planDiet({
   if (candidates.isEmpty) {
     return DietPlan(
       status: DietStatus.noCandidates,
+      objective: objective,
       gramsByKey: const {},
-      costUsd: 0,
+      costUsd: null,
       kcal: 0,
       proteinG: 0,
       sodiumMg: 0,
@@ -355,17 +387,19 @@ DietPlan planDiet({
       excludedEs: excluded,
       bindingEs: const [],
       messageEs:
-          'No hay alimentos con precio, kcal y proteína en la '
-          'despensa.',
+          'No hay alimentos con kcal y proteína conocidas en la despensa.',
     );
   }
 
   final fatCap = params.fatMaxFrac * targets.kcalMin / 9;
 
+  final kcalCap = targets.kcalMin * (1 + params.kcalOvershootFrac);
+
   LpSolution solve({
     bool withSodium = true,
     bool withFat = true,
     bool withShareCaps = true,
+    bool withKcalCap = true,
   }) {
     final n = candidates.length;
     final constraints = <LinearConstraint>[
@@ -382,6 +416,18 @@ DietPlan planDiet({
         label: 'proteina',
       ),
     ];
+    if (objective == DietObjective.score &&
+        withKcalCap &&
+        targets.kcalMin > 0) {
+      constraints.add(
+        LinearConstraint(
+          [for (final c in candidates) c.food.kcalPerG!],
+          ConstraintSense.le,
+          kcalCap,
+          label: 'kcal_max',
+        ),
+      );
+    }
     if (withSodium && candidates.any((c) => c.food.sodiumMgPerG != null)) {
       constraints.add(
         LinearConstraint(
@@ -418,7 +464,12 @@ DietPlan planDiet({
       );
     }
     return solveLp(
-      objective: [for (final c in candidates) c.food.costUsdPerG!],
+      objective: objective == DietObjective.cost
+          ? [for (final c in candidates) c.food.costUsdPerG!]
+          : [
+              for (final c in candidates)
+                -(c.food.score ?? 0) * c.food.kcalPerG!,
+            ],
       constraints: constraints,
     );
   }
@@ -427,6 +478,7 @@ DietPlan planDiet({
   if (solution.status == LpStatus.optimal) {
     final grams = <String, double>{};
     var kcal = 0.0, protein = 0.0, sodium = 0.0, fat = 0.0, cost = 0.0;
+    var unscored = false;
     var sodiumPartial = false;
     for (var i = 0; i < candidates.length; i++) {
       final g = solution.values[i];
@@ -435,7 +487,8 @@ DietPlan planDiet({
       grams[f.key] = g;
       kcal += f.kcalPerG! * g;
       protein += f.proteinPerG! * g;
-      cost += f.costUsdPerG! * g;
+      cost += (f.costUsdPerG ?? 0) * g;
+      if (f.score == null) unscored = true;
       if (f.sodiumMgPerG == null) {
         sodiumPartial = true;
       } else {
@@ -443,10 +496,13 @@ DietPlan planDiet({
       }
       if (f.fatPerG != null) fat += f.fatPerG! * g;
     }
+    final summary =
+        '${formatWhole(kcal)} kcal, ${formatWhole(protein)} g de proteína.';
     return DietPlan(
       status: DietStatus.optimal,
+      objective: objective,
       gramsByKey: grams,
-      costUsd: cost,
+      costUsd: objective == DietObjective.cost ? cost : null,
       kcal: kcal,
       proteinG: protein,
       sodiumMg: sodium,
@@ -454,9 +510,11 @@ DietPlan planDiet({
       sodiumPartial: sodiumPartial,
       excludedEs: excluded,
       bindingEs: const [],
-      messageEs:
-          'Plan de ${formatDecimal(cost, decimals: 2)} USD: '
-          '${formatWhole(kcal)} kcal, ${formatWhole(protein)} g de proteína.',
+      messageEs: objective == DietObjective.cost
+          ? 'Plan más barato: ${formatDecimal(cost, decimals: 2)} USD, $summary'
+          : 'Plan sin precios (mejor puntuación de tu despensa): $summary'
+                '${unscored ? ' Algunos alimentos no tienen puntuación y '
+                          'cuentan como neutros.' : ''}',
     );
   }
 
@@ -491,6 +549,13 @@ DietPlan planDiet({
         '${formatWhole(params.fatMaxFrac * 100)} % de kcal en grasa.',
       );
     }
+    if (objective == DietObjective.score &&
+        solve(withKcalCap: false).status == LpStatus.optimal) {
+      binding.add(
+        'kcal: la proteína que falta exige pasar de '
+        '${formatWhole(kcalCap)} kcal con lo que hay.',
+      );
+    }
     if (solve(withShareCaps: false).status == LpStatus.optimal) {
       binding.add(
         'variedad: hace falta que un alimento pase del '
@@ -506,8 +571,9 @@ DietPlan planDiet({
   }
   return DietPlan(
     status: DietStatus.infeasible,
+    objective: objective,
     gramsByKey: const {},
-    costUsd: 0,
+    costUsd: null,
     kcal: 0,
     proteinG: 0,
     sodiumMg: 0,
