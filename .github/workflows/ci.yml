@@ -77,6 +77,13 @@ jobs:
         run: echo "LOCK_B64=$(gzip -9c pubspec.lock | base64 -w0)"
       - name: Generar código (drift)
         run: dart run build_runner build
+      - name: Esquema drift exportado (gzip + base64)
+        run: |
+          mkdir -p "$RUNNER_TEMP/schema"
+          dart run drift_dev schema dump lib/data/user_db.dart "$RUNNER_TEMP/schema/"
+          for f in "$RUNNER_TEMP"/schema/*.json; do
+            echo "SCHEMA $(basename "$f") $(gzip -9c "$f" | base64 -w0)"
+          done
       - run: flutter analyze
       - run: flutter test
 
