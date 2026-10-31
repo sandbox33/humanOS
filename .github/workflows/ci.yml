@@ -107,9 +107,8 @@ jobs:
           grep -o 'minSdkVersion="[0-9]*"' AndroidManifest.xml || true
           unzip -l classes.jar | awk '{print $4}' | grep '\.class$' | grep -v '\$' | sed 's/\.class$//' | tr / . > classes.txt
           wc -l classes.txt
-          for c in $(grep -E '\.(Engine|EngineConfig|Backend|Conversation|ConversationConfig|SamplerConfig|Message|Content|Contents|LiteRtLmJniException)$' classes.txt); do
-            javap -public -classpath classes.jar "$c" || true
-          done
+          javap -public -classpath classes.jar 'com.google.ai.edge.litertlm.Backend$CPU' 'com.google.ai.edge.litertlm.Content$Text' || true
+          unzip -l classes.jar | awk '{print $4}' | grep -E 'litertlm/(Backend|Content)\$' || true
           curl -fsS "https://dl.google.com/dl/android/maven2/com/google/ai/edge/litertlm/litertlm-android/$v/litertlm-android-$v.pom" | grep -A3 '<dependency>' | grep -E 'groupId|artifactId|version' || true
       - name: Modelos oficiales en Hugging Face (tamaño y SHA-256)
         run: |
@@ -118,8 +117,10 @@ jobs:
             curl -fsS "https://huggingface.co/api/models/$repo/tree/main" | python3 -c "
           import json, sys
           for f in json.load(sys.stdin):
-              if f['path'].endswith(('.litertlm', '.task')):
-                  print(f['path'], f.get('size'), (f.get('lfs') or {}).get('oid'))
+              if f['path'] in ('gemma3-270m-it-q8.litertlm', 'gemma3-1b-it-int4.litertlm'):
+                  oid = (f.get('lfs') or {}).get('oid') or ''
+                  # In blocks of 8: the log masks long hex strings.
+                  print(f['path'], f.get('size'), ' '.join(oid[i:i + 8] for i in range(0, len(oid), 8)))
           " || true
             curl -fsS "https://huggingface.co/api/models/$repo" | python3 -c "
           import json, sys
