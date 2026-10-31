@@ -122,6 +122,7 @@ void main() {
   testWidgets('a zone is created from the current location with the default radius', (tester) async {
     await pump(tester, const ContextoScreen());
     await tester.ensureVisible(find.text('NUEVA ZONA'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('NUEVA ZONA'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'Nombre neutro'), 'Zona A');
@@ -129,6 +130,7 @@ void main() {
     await tester.tap(find.text('USAR MI UBICACIÓN ACTUAL'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('GUARDAR'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('GUARDAR'));
     await tester.pumpAndSettle();
 
@@ -148,12 +150,14 @@ void main() {
     }
     await pump(tester, const ContextoScreen());
     await tester.ensureVisible(find.text('NUEVA ZONA'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('NUEVA ZONA'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'Nombre neutro'), 'Zona extra');
     await tester.enterText(find.widgetWithText(TextField, 'O escribe o pega «latitud, longitud»'), '20.5, -30.25');
     await unfocus(tester);
     await tester.ensureVisible(find.text('GUARDAR'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('GUARDAR'));
     await tester.pump();
     expect(find.textContaining('máximo de zonas activas'), findsOneWidget);
@@ -226,6 +230,7 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, '4').last);
     await tester.pump();
     await tester.ensureVisible(find.text('GUARDAR'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('GUARDAR'));
     await tester.pumpAndSettle();
 
@@ -284,8 +289,9 @@ void main() {
     await syncAlarms(ref);
     expect(scheduler.alarms.map((a) => (a.label, a.minuteOfDay, a.daysMask)), [('Despertar', 330, 0x1F)]);
     // Friday 09:00 → Monday 05:30.
-    expect(find.textContaining('2 nov 05:30'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'2 nov\.? 05:30')), findsOneWidget);
     await tester.ensureVisible(find.text('PROBAR SONIDO AHORA'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('PROBAR SONIDO AHORA'));
     await tester.pump();
     expect(scheduler.rung, ['Prueba de alarma']);
