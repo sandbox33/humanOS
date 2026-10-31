@@ -12,7 +12,6 @@ import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/settings.dart';
 import '../../../data/user_db.dart';
 import '../../estado/domain/targets.dart';
-import '../data/work_repository.dart';
 import '../domain/work_model.dart';
 import 'templates_page.dart';
 import 'work_entry_sheet.dart';

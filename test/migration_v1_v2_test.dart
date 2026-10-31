@@ -27,28 +27,28 @@ File v1Database(
   }
   db.execute('PRAGMA user_version = 1');
   db.execute(
-    "INSERT INTO profile (id, name, birth_year, height_cm, sex, target_weight_kg, shift_start, shift_end, lunch_start) "
+    'INSERT INTO profile (id, name, birth_year, height_cm, sex, target_weight_kg, shift_start, shift_end, lunch_start) '
     "VALUES (1, 'Persona de prueba', 1990, 175, 'male', 75, ?, ?, ?)",
     [shiftStart, shiftEnd, lunchStart],
   );
   db.execute(
-    "INSERT INTO assumptions (key, value, title_es, explain_es) VALUES "
+    'INSERT INTO assumptions (key, value, title_es, explain_es) VALUES '
     "('lunch_duration_min', 45, 't', 'e'), ('sweat_na_mmol_l', 40, 't', 'e'), "
     "('hydration_goal_fraction', 0.8, 't', 'e'), ('protein_g_per_kg', 2.0, 't', 'e')",
   );
   db.execute(
-    "INSERT INTO daily_logs (date, work_effort, heat_hours, fluids_l, sweat_pre_kg, intake_complete) VALUES "
+    'INSERT INTO daily_logs (date, work_effort, heat_hours, fluids_l, sweat_pre_kg, intake_complete) VALUES '
     "('2026-10-01', 'HIGH', 2.5, 3.1, 70.2, 1), ('2026-10-02', 'OFF', NULL, NULL, NULL, 0), "
     "('2026-10-03', 'LOW', 0, NULL, NULL, 0)",
   );
   db.execute("INSERT INTO purchases (id, date, store, total_usd) VALUES (1, '2026-10-01', 'tienda', 12.345)");
   db.execute(
-    "INSERT INTO pantry_items (id, food_id, grams_remaining, price_usd_per_kg, purchase_id) VALUES (1, 3, 800, 3.5, 1)",
+    'INSERT INTO pantry_items (id, food_id, grams_remaining, price_usd_per_kg, purchase_id) VALUES (1, 3, 800, 3.5, 1)',
   );
   db.execute("INSERT INTO meals (id, date, block) VALUES (1, '2026-10-01', 'LUNCH')");
   db.execute('INSERT INTO meal_items (meal_id, food_id, grams, pantry_item_id) VALUES (1, 3, 150, 1)');
   db.execute(
-    "INSERT INTO habits (alias, icon, weight, is_minimum, metric, target, source) VALUES "
+    'INSERT INTO habits (alias, icon, weight, is_minimum, metric, target, source) VALUES '
     "('H2O', 'water', 2, 0, 'min', 80, 'hydration_pct'), ('P100', 'protein', 3, 1, 'min', 100, 'protein_g')",
   );
   db.execute(

@@ -282,7 +282,7 @@ final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
   ];
   final bands = <DateTime, ReadinessBand>{
     for (final r in ref.watch(readinessHistoryProvider).value ?? const <ReadinessRow>[])
-      if (ReadinessBand.parse(r.band) case final band?) parseIsoDate(r.date): band,
+      parseIsoDate(r.date): ?ReadinessBand.parse(r.band),
   };
 
   final overview = ref.watch(habitsOverviewProvider);

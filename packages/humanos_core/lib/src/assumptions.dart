@@ -1048,8 +1048,7 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'mg',
     group: AssumptionGroup.despensa,
     titleEs: 'Límite de sodio diario',
-    explainEs:
-        'El plan del día de la despensa no pasa de este total de sodio.',
+    explainEs: 'El plan del día de la despensa no pasa de este total de sodio.',
     source: 'NASEM 2019, Dietary Reference Intakes for Sodium and Potassium',
   ),
   AssumptionDef(
@@ -1302,7 +1301,8 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'min',
     group: AssumptionGroup.horario,
     titleEs: 'Duración del almuerzo',
-    explainEs: 'Se usa cuando la plantilla de trabajo no indica los minutos de pausa.',
+    explainEs:
+        'Se usa cuando la plantilla de trabajo no indica los minutos de pausa.',
     source: _model,
   ),
   AssumptionDef(

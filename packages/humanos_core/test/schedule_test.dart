@@ -57,8 +57,16 @@ void main() {
       lunchStart: '11:30',
       lunchMinutes: 30,
     );
-    final slots = mealSchedule(shift: ownBreak, trainingDay: false, workday: true, params: p);
-    expect(slots.firstWhere((s) => s.block == MealBlock.afternoon).clock, '14:15');
+    final slots = mealSchedule(
+      shift: ownBreak,
+      trainingDay: false,
+      workday: true,
+      params: p,
+    );
+    expect(
+      slots.firstWhere((s) => s.block == MealBlock.afternoon).clock,
+      '14:15',
+    );
   });
 
   test('shift length', () {
