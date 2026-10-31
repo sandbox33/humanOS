@@ -137,7 +137,7 @@ void main() {
 
   testWidgets('a sixth active zone is refused', (tester) async {
     for (var i = 0; i < 5; i++) {
-      await zone('Zona $i', 'otro', lat: 10 + i);
+      await zone('Zona $i', 'otro', lat: 10.0 + i);
     }
     await pump(tester, const ContextoScreen());
     await tester.ensureVisible(find.text('NUEVA ZONA'));

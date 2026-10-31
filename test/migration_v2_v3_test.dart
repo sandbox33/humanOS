@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Table, TableInfo;
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,7 +56,15 @@ void main() {
 
     expect((await db.select(db.workEntries).getSingle()).minutes, 450);
     expect((await db.select(db.dailyLogs).getSingle()).heatMinutes, 90);
-    for (final table in [db.zones, db.contextEvents, db.modeCorrections, db.stateCheckins, db.eventReminders, db.morningAlarms]) {
+    final added = <TableInfo<Table, Object?>>[
+      db.zones,
+      db.contextEvents,
+      db.modeCorrections,
+      db.stateCheckins,
+      db.eventReminders,
+      db.morningAlarms,
+    ];
+    for (final table in added) {
       expect(await db.select(table).get(), isEmpty, reason: table.actualTableName);
     }
 

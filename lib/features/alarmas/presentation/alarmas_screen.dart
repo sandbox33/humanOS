@@ -133,7 +133,7 @@ class _AlarmEditor extends ConsumerStatefulWidget {
 class _AlarmEditorState extends ConsumerState<_AlarmEditor> {
   late final TextEditingController _label = TextEditingController(text: widget.existing?.label ?? 'Despertar');
   late String? _clock = widget.existing?.clock;
-  late Set<int> _days = weekdaysOf(widget.existing?.daysMask ?? daysMaskOf([1, 2, 3, 4, 5])).toSet();
+  late final Set<int> _days = weekdaysOf(widget.existing?.daysMask ?? daysMaskOf([1, 2, 3, 4, 5])).toSet();
   late double _snooze =
       (widget.existing?.snoozeMinutes ?? ref.read(currentAssumptionsProvider).integer(A.alarmSnoozeMin)).toDouble();
 
