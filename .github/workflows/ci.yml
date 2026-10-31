@@ -119,8 +119,9 @@ jobs:
           for f in json.load(sys.stdin):
               if f['path'] in ('gemma3-270m-it-q8.litertlm', 'gemma3-1b-it-int4.litertlm'):
                   oid = (f.get('lfs') or {}).get('oid') or ''
-                  # In blocks of 8: the log masks long hex strings.
-                  print(f['path'], f.get('size'), ' '.join(oid[i:i + 8] for i in range(0, len(oid), 8)))
+                  # Base64 and decimal: the log masks hexadecimal strings.
+                  import base64
+                  print(f['path'], f.get('size'), 'sha256-b64', base64.b64encode(bytes.fromhex(oid)).decode(), 'sha256-int', int(oid, 16) if oid else '')
           " || true
             curl -fsS "https://huggingface.co/api/models/$repo" | python3 -c "
           import json, sys
