@@ -96,7 +96,7 @@ Future<double?> askNumber(
   return double.tryParse(text.replaceAll(',', '.'));
 }
 
-/// Asks for an amount of money and returns integer cents ("3,25" → 325).
+/// Asks for an amount of money and returns integer cents ("12,50" → 1250).
 /// Null when cancelled, empty or not a valid amount (the user is told).
 Future<int?> askCents(
   BuildContext context, {
@@ -114,7 +114,7 @@ Future<int?> askCents(
   if (text == null || text.trim().isEmpty || !context.mounted) return null;
   final cents = parseCents(text);
   if (cents == null || cents < 0) {
-    toast(context, 'Revisa el monto: usa números como 3,25.');
+    toast(context, 'Revisa el monto: usa números como 12,50.');
     return null;
   }
   return cents;

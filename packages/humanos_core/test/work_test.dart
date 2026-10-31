@@ -14,11 +14,11 @@ void main() {
   });
 
   test('rate × minutes in cents, rounded half away from zero', () {
-    expect(earnedFor(240, 325), 1300); // 4 h at 3,25/h
-    expect(earnedFor(90, 325), 488); // 487,5 → 488
+    expect(earnedFor(240, 480), 1920); // 4 h at 4,80/h
+    expect(earnedFor(90, 455), 683); // 682,5 → 683
     expect(earnedFor(1, 100), 2); // 1,67 → 2
-    expect(earnedFor(0, 325), 0);
-    expect(() => earnedFor(-1, 325), throwsArgumentError);
+    expect(earnedFor(0, 480), 0);
+    expect(() => earnedFor(-1, 480), throwsArgumentError);
   });
 
   test('entry with start and end across midnight and a rate', () {
@@ -28,12 +28,12 @@ void main() {
       kind: WorkKind.eventual,
       startMin: parseClock('20:30'),
       endMin: parseClock('00:30'),
-      rateCentsPerHour: 325,
+      rateCentsPerHour: 480,
     );
     expect(r.issues, isEmpty);
     final e = r.entry!;
     expect(e.minutes, 240);
-    expect(e.earnedCents, 1300);
+    expect(e.earnedCents, 1920);
     expect(e.date, dateOnly(day));
     expect(e.end!.day, 31);
   });
@@ -41,7 +41,7 @@ void main() {
   test('entry without a rate keeps the total and no rate', () {
     final r = buildWorkEntry(
       date: day,
-      label: 'Arreglo',
+      label: 'Encargo',
       kind: WorkKind.eventual,
       minutes: 150,
       rateCentsPerHour: 500,
@@ -69,7 +69,7 @@ void main() {
       date: day,
       label: 'Trabajo',
       kind: WorkKind.estable,
-      rateCentsPerHour: 325,
+      rateCentsPerHour: 480,
     );
     expect(r.entry, isNull);
     expect(r.issues, [WorkIssue.rateWithoutHours]);
@@ -185,7 +185,7 @@ void main() {
     expect(formatWorkMinutes(450), '7 h 30 min');
     expect(formatWorkMinutes(45), '45 min');
     expect(formatWorkMinutes(120), '2 h');
-    expect(hoursOfWorkEs(1300, 325), '4 h');
+    expect(hoursOfWorkEs(1920, 480), '4 h');
     expect(hoursOfWorkEs(1000, 0), 'sin dato');
     expect(WorkKind.parse('estable'), WorkKind.estable);
     expect(WorkKind.parse(null), WorkKind.eventual);

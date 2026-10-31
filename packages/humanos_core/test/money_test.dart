@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 void main() {
   test('parses Spanish and English decimal separators into cents', () {
-    expect(parseCents('3,25'), 325);
-    expect(parseCents('3.25'), 325);
+    expect(parseCents('4,75'), 475);
+    expect(parseCents('4.75'), 475);
     expect(parseCents('\$ 12'), 1200);
     expect(parseCents('12 USD'), 1200);
     expect(parseCents('0,5'), 50);
@@ -16,8 +16,8 @@ void main() {
     expect(parseCents('1.250,50'), 125050);
     expect(parseCents('1,250.50'), 125050);
     expect(parseCents('1.250.000'), 125000000);
-    expect(parseCents('3,255'), 326);
-    expect(parseCents('3,254'), 325);
+    expect(parseCents('4,755'), 476);
+    expect(parseCents('4,754'), 475);
   });
 
   test('rejects text that is not an amount', () {
@@ -27,7 +27,7 @@ void main() {
   });
 
   test('formats cents for es-EC', () {
-    expect(formatCents(325), '3,25 USD');
+    expect(formatCents(475), '4,75 USD');
     expect(formatCents(5), '0,05 USD');
     expect(formatCents(-40), '-0,40 USD');
     expect(formatCents(125050, withCurrency: false), '1250,50');

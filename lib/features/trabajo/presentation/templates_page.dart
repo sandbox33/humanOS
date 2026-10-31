@@ -156,7 +156,7 @@ class _TemplateEditorState extends ConsumerState<_TemplateEditor> {
     }
     final rate = _rate.text.trim().isEmpty ? null : parseCents(_rate.text);
     if (_rate.text.trim().isNotEmpty && (rate == null || rate < 0)) {
-      toast(context, 'Revisa la tarifa: usa números como 3,25.');
+      toast(context, 'Revisa la tarifa: usa números como 12,50.');
       return;
     }
     final pause = int.tryParse(_breakMinutes.text.trim());

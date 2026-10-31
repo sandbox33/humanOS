@@ -1,11 +1,11 @@
 /// Money as integer cents (never `double` in storage). Parsing and
-/// formatting for Spanish (Ecuador) input: "3,25", "3.25", "$12", "1.250,50".
+/// formatting for Spanish (Ecuador) input: "4,75", "4.75", "$12", "1.250,50".
 library;
 
 /// Parses a typed amount into cents. Accepts a comma or a dot as decimal
 /// separator; a separator followed by exactly three digits and more
 /// separators is read as thousands ("1.250,50" → 125050). More than two
-/// decimals round half up ("3,255" → 326). Null for empty or invalid text.
+/// decimals round half up ("4,755" → 476). Null for empty or invalid text.
 int? parseCents(String text) {
   var t = text.trim().replaceAll(RegExp(r'[\s$]|usd|USD'), '');
   if (t.isEmpty) return null;
@@ -50,7 +50,7 @@ int? parseCents(String text) {
   return negative ? -cents : cents;
 }
 
-/// "3,25 USD", "1250,50 USD", "-0,40 USD".
+/// "4,75 USD", "1250,50 USD", "-0,40 USD".
 String formatCents(int cents, {bool withCurrency = true}) {
   final negative = cents < 0;
   final abs = cents.abs();

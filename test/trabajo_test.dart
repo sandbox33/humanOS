@@ -27,7 +27,7 @@ void main() {
     await db.into(db.workTemplates).insert(WorkTemplatesCompanion.insert(
           label: 'Prueba',
           kind: 'estable',
-          rateCentsPerHour: const Value(325),
+          rateCentsPerHour: const Value(455),
           startClock: const Value('08:00'),
           endClock: const Value('16:00'),
           breakStart: const Value('12:00'),
@@ -70,7 +70,7 @@ void main() {
     final entry = await db.select(db.workEntries).getSingle();
     expect(entry.label, 'Prueba');
     expect(entry.minutes, 450);
-    expect(entry.earnedCents, 2438); // 450 min × 3,25 / 60 = 24,375 → 24,38
+    expect(entry.earnedCents, 3413); // 450 min × 4,55 / 60 = 34,125 → 34,13
     expect(entry.startTs, '2026-10-30T08:00:00');
     expect(entry.endTs, '2026-10-30T16:00:00');
     await tester.pumpWidget(const SizedBox.shrink());

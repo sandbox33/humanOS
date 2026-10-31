@@ -109,7 +109,7 @@ class _WorkEntrySheetState extends ConsumerState<WorkEntrySheet> {
     final total = _total.text.trim().isEmpty ? null : parseCents(_total.text);
     final rate = _rate.text.trim().isEmpty ? null : parseCents(_rate.text);
     if ((_total.text.trim().isNotEmpty && total == null) || (_rate.text.trim().isNotEmpty && rate == null)) {
-      toast(context, 'Revisa los montos: usa números como 3,25.');
+      toast(context, 'Revisa los montos: usa números como 12,50.');
       return;
     }
     final built = buildWorkEntry(
