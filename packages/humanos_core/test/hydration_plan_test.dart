@@ -95,10 +95,10 @@ void main() {
   group('reminders only before work and in the break', () {
     const heat = WorkSchedule(
       label: 'Trabajo con calor',
-      startMin: 7 * 60,
-      endMin: 17 * 60,
+      startMin: 8 * 60,
+      endMin: 16 * 60 + 30,
       breakStartMin: 12 * 60,
-      breakMinutes: 60,
+      breakMinutes: 30,
       daysMask: 0x7F,
       heatExposure: true,
     );
@@ -117,7 +117,7 @@ void main() {
         today: today,
         params: p,
       );
-      expect(plannedHeatMinutes(windows), 540);
+      expect(plannedHeatMinutes(windows), 480);
       final reminders = hydrationReminders(
         windows: windows,
         plan: plan,
@@ -125,7 +125,7 @@ void main() {
       );
       expect(reminders, hasLength(2));
       expect(reminders[0].kind, HydrationReminderKind.preWork);
-      expect(reminders[0].at, DateTime(2026, 10, 30, 6, 30));
+      expect(reminders[0].at, DateTime(2026, 10, 30, 7, 30));
       expect(reminders[0].bodyEs, contains(plan.rangeEs));
       expect(reminders[0].bodyEs, contains(electrolyteNoteEs));
       expect(reminders[1].kind, HydrationReminderKind.breakTime);

@@ -203,10 +203,10 @@ void main() {
     );
     const day = WorkSchedule(
       label: 'Día',
-      startMin: 7 * 60,
-      endMin: 17 * 60,
+      startMin: 8 * 60,
+      endMin: 16 * 60 + 30,
       breakStartMin: 12 * 60,
-      breakMinutes: 60,
+      breakMinutes: 30,
       daysMask: 0x3F, // Monday–Saturday
     );
 
@@ -216,7 +216,7 @@ void main() {
       expect(weekdaysOf(null), isEmpty);
       expect(day.plannedOn(DateTime(2026, 11, 1)), isFalse, reason: 'Sunday');
       expect(day.plannedOn(DateTime(2026, 10, 31)), isTrue, reason: 'Saturday');
-      expect(day.plannedMinutes(DateTime(2026, 10, 31)), 540);
+      expect(day.plannedMinutes(DateTime(2026, 10, 31)), 480);
       expect(night.plannedMinutes(DateTime(2026, 10, 30)), 450);
     });
 
@@ -238,9 +238,10 @@ void main() {
     test('break window and silence', () {
       final w = plannedWindows(DateTime(2026, 10, 29), [day]).single;
       expect(w.silences(DateTime(2026, 10, 29, 9)), isTrue);
-      expect(w.inBreak(DateTime(2026, 10, 29, 12, 30)), isTrue);
-      expect(w.silences(DateTime(2026, 10, 29, 12, 30)), isFalse);
-      expect(w.silences(DateTime(2026, 10, 29, 6, 59)), isFalse);
+      expect(w.inBreak(DateTime(2026, 10, 29, 12, 15)), isTrue);
+      expect(w.silences(DateTime(2026, 10, 29, 12, 15)), isFalse);
+      expect(w.silences(DateTime(2026, 10, 29, 12, 30)), isTrue);
+      expect(w.silences(DateTime(2026, 10, 29, 7, 59)), isFalse);
     });
 
     test(
@@ -250,16 +251,16 @@ void main() {
           date: DateTime(2026, 10, 29),
           label: 'Día',
           kind: WorkKind.estable,
-          startMin: 7 * 60 + 5,
+          startMin: 8 * 60 + 5,
         ).entry!;
         final withTemplate = inProgressWindow(
           started,
           openHours: 12,
           schedule: day,
         )!;
-        expect(withTemplate.end, DateTime(2026, 10, 29, 17));
+        expect(withTemplate.end, DateTime(2026, 10, 29, 16, 30));
         final open = inProgressWindow(started, openHours: 12)!;
-        expect(open.end, DateTime(2026, 10, 29, 19, 5));
+        expect(open.end, DateTime(2026, 10, 29, 20, 5));
         expect(
           inProgressWindow(
             finishWork(started, DateTime(2026, 10, 29, 9)),

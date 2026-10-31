@@ -7,10 +7,10 @@ void main() {
   final params = PolicyParams.fromAssumptions(Assumptions.defaults());
   const plan = WorkSchedule(
     label: 'Trabajo',
-    startMin: 7 * 60,
-    endMin: 17 * 60,
+    startMin: 8 * 60,
+    endMin: 16 * 60 + 30,
     breakStartMin: 12 * 60,
-    breakMinutes: 60,
+    breakMinutes: 30,
     daysMask: 0x1F, // Monday–Friday
   );
   final friday = DateTime(2026, 10, 30);
@@ -30,9 +30,9 @@ void main() {
 
   test('zero notifications inside work except in the break', () {
     for (final kind in NotificationKind.values) {
-      for (var minute = 7 * 60; minute < 17 * 60; minute += 5) {
+      for (var minute = 8 * 60; minute < 16 * 60 + 30; minute += 5) {
         final when = at(minute ~/ 60, minute % 60);
-        final inBreak = minute >= 12 * 60 && minute < 13 * 60;
+        final inBreak = minute >= 12 * 60 && minute < 12 * 60 + 30;
         expect(
           check(kind, when).allowed,
           inBreak,
@@ -84,7 +84,7 @@ void main() {
     final morning = check(NotificationKind.foodSafety, at(9, 10));
     expect(morning.allowed, isFalse);
     expect(morning.deferTo, at(12, 0));
-    expect(check(NotificationKind.foodSafety, at(14, 0)).deferTo, at(17, 0));
+    expect(check(NotificationKind.foodSafety, at(14, 0)).deferTo, at(16, 30));
   });
 
   test('overlapping windows defer past both', () {
