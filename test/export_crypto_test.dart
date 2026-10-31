@@ -34,7 +34,7 @@ void main() {
     final source = memoryUserDb();
     await seedIfNeeded(source);
     await source.into(source.bodyMetrics).insert(
-          BodyMetricsCompanion.insert(date: '2026-10-13', weightKg: const Value(65.4)),
+          BodyMetricsCompanion.insert(date: '2026-10-13', weightKg: const Value(70.4)),
         );
     final json = await BackupService(source).dumpJson(DateTime(2026, 10, 13));
 
@@ -42,7 +42,7 @@ void main() {
     final rows = await BackupService(target).restoreJson(json);
     expect(rows, greaterThan(0));
     final weight = await target.select(target.bodyMetrics).getSingle();
-    expect(weight.weightKg, 65.4);
+    expect(weight.weightKg, 70.4);
     expect(await target.select(target.habits).get(), hasLength(7));
     await source.close();
     await target.close();
