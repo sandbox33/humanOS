@@ -6,6 +6,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/common.dart' show CommonDatabase;
 import 'package:sqlite3/sqlite3.dart' as raw;
 
 import 'user_db.dart';
@@ -35,7 +36,7 @@ const String dbKeyRiskEs =
     'contraseña: expórtala de vez en cuando y guárdala fuera del teléfono.';
 
 /// First statement of every connection (SQLite3MultipleCiphers).
-void applyDbKey(raw.CommonDatabase db, String keyHex) {
+void applyDbKey(CommonDatabase db, String keyHex) {
   db.execute("PRAGMA hexkey = '$keyHex'");
 }
 
@@ -53,7 +54,7 @@ bool isPlainSqlite(File file) {
 }
 
 /// Rows per user table, used to prove that nothing was lost.
-Map<String, int> tableRowCounts(raw.CommonDatabase db) {
+Map<String, int> tableRowCounts(CommonDatabase db) {
   final tables = db
       .select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
       .map((r) => r['name'] as String)
