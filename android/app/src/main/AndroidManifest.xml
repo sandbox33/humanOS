@@ -45,8 +45,11 @@
     <!-- Xiaomi/HyperOS guide: the user can exempt the app from battery limits. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
-    <!-- Only for Open Food Facts lookups of products missing locally. -->
+    <!-- Open Food Facts lookups of products missing locally, and the
+         assistant's model download (Wi-Fi only, checked with the network
+         state). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <!-- Screen time (habit VISOR); granted by the user in system settings. -->
     <uses-permission

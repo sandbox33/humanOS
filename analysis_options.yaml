@@ -5,6 +5,8 @@ analyzer:
     - "**/*.g.dart"
     - packages/**
     - etl/**
+    # Pigeon source: generated files are committed; the app does not depend on pigeon.
+    - pigeons/**
   language:
     strict-raw-types: true
 

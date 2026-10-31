@@ -8,6 +8,7 @@ import 'package:humanos_core/humanos_core.dart';
 import '../data/settings.dart';
 import '../features/ajustes/presentation/ajustes_screen.dart';
 import '../features/alarmas/presentation/alarmas_screen.dart';
+import '../features/asistente/presentation/asistente_screen.dart';
 import '../features/contexto/domain/context_model.dart';
 import '../features/contexto/presentation/contexto_screen.dart';
 import '../features/despensa/presentation/despensa_screen.dart';
@@ -265,6 +266,7 @@ class MasScreen extends StatelessWidget {
         tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
             () => const ContextoScreen()),
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
+        tile('ASISTENTE', 'Una frase → un registro que confirmas', Icons.auto_fix_high, () => const AsistenteScreen()),
         tile('AJUSTES', 'Perfil, supuestos, datos de salud y copias', Icons.settings_outlined,
             () => const AjustesScreen()),
         const SizedBox(height: 12),

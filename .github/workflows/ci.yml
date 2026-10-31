@@ -117,13 +117,11 @@ jobs:
             curl -fsS "https://huggingface.co/api/models/$repo/tree/main" | python3 -c "
           import json, sys
           for f in json.load(sys.stdin):
+              # The app pins these sizes (model_manager.dart); the SHA-256 of a
+              # license-gated file is only shown with an accepted token, so
+              # the app reads it with the user's own token.
               if f['path'] in ('gemma3-270m-it-q8.litertlm', 'gemma3-1b-it-int4.litertlm'):
-                  oid = (f.get('lfs') or {}).get('oid') or ''
-                  # Base64 and decimal: the log masks hexadecimal strings.
-                  import base64
-                  hexpart = oid.split(':')[-1].strip().lower()
-                  print(f['path'], f.get('size'), 'oid-len', len(oid), 'prefix', repr(oid[:7].translate(str.maketrans('0123456789abcdef', 'ghijklmnopqrstuv'))))
-                  print('sha256-b64', base64.b64encode(bytes.fromhex(hexpart)).decode())
+                  print(f['path'], f.get('size'))
           " || true
             curl -fsS "https://huggingface.co/api/models/$repo" | python3 -c "
           import json, sys

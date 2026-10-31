@@ -12,7 +12,9 @@ import 'data/reference_db.dart';
 import 'data/reference_installer.dart';
 import 'data/seed.dart';
 import 'data/settings.dart';
+import 'features/asistente/domain/assistant_model.dart';
 import 'services/device_context.dart';
+import 'services/llm_bridge.pigeon.dart';
 import 'services/notifications.dart';
 import 'services/screen_awake.dart';
 import 'services/services.dart';
@@ -71,6 +73,7 @@ Future<void> main() async {
       notificationServiceProvider.overrideWithValue(scheduler),
       alarmServiceProvider.overrideWithValue(scheduler),
       deviceContextProvider.overrideWithValue(ChannelDeviceContext()),
+      llmBridgeProvider.overrideWithValue(LlmBridge()),
       tempoAudioProvider.overrideWithValue(audio),
       screenAwakeProvider.overrideWithValue(WindowScreenAwake()),
       healthSourceProvider.overrideWithValue(PluginHealthSource()),

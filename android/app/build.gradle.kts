@@ -68,6 +68,9 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // GeofencingClient and a single current-location reading (zones).
     implementation("com.google.android.gms:play-services-location:21.4.0")
+    // On-device model for the assistant (LiteRT-LM, CPU). Brings
+    // kotlinx-coroutines, which the Pigeon bridge uses.
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.0")
 }
 
 flutter {

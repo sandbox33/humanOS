@@ -18,17 +18,26 @@ enum _TimeMode { range, duration, startNow }
 /// Quick log: template → hours → save (three taps when the template has
 /// times). Also edits an existing entry.
 class WorkEntrySheet extends ConsumerStatefulWidget {
-  const WorkEntrySheet({super.key, this.template, this.existing});
+  const WorkEntrySheet({super.key, this.template, this.existing, this.prefill});
 
   final WorkTemplateRow? template;
   final WorkEntryRow? existing;
 
-  static Future<void> show(BuildContext context, {WorkTemplateRow? template, WorkEntryRow? existing}) =>
+  /// A `work_entry` record from the assistant: the form starts with it and
+  /// the user confirms.
+  final LogIntent? prefill;
+
+  static Future<void> show(
+    BuildContext context, {
+    WorkTemplateRow? template,
+    WorkEntryRow? existing,
+    LogIntent? prefill,
+  }) =>
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        builder: (_) => WorkEntrySheet(template: template, existing: existing),
+        builder: (_) => WorkEntrySheet(template: template, existing: existing, prefill: prefill),
       );
 
   @override
@@ -69,6 +78,15 @@ class _WorkEntrySheetState extends ConsumerState<WorkEntrySheet> {
     _start ??= t?.startClock;
     _end ??= t?.endClock;
     _hours = (e?.minutes ?? 0) / 60;
+    final p = widget.prefill?.fields;
+    if (p != null) {
+      if (p['label'] case final String label) _label.text = label;
+      if (p['start'] case final String start) _start = start;
+      if (p['end'] case final String end) _end = end;
+      if (p['minutes'] case final int minutes) _hours = minutes / 60;
+      if (p['rate_cents'] case final int rate) _rate.text = formatCents(rate, withCurrency: false);
+      if (p['total_cents'] case final int total) _total.text = formatCents(total, withCurrency: false);
+    }
     _mode = (_start != null && _end != null) ? _TimeMode.range : _TimeMode.duration;
   }
 

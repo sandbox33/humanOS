@@ -32,11 +32,12 @@ Future<void> showAddItemSheet(
   required FoodChoice choice,
   required String date,
   required MealBlock block,
+  double? initialGrams,
 }) =>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => AddItemSheet(choice: choice, date: date, initialBlock: block),
+      builder: (_) => AddItemSheet(choice: choice, date: date, initialBlock: block, initialGrams: initialGrams),
     );
 
 class AddItemSheet extends ConsumerStatefulWidget {
@@ -45,11 +46,15 @@ class AddItemSheet extends ConsumerStatefulWidget {
     required this.choice,
     required this.date,
     required this.initialBlock,
+    this.initialGrams,
   });
 
   final FoodChoice choice;
   final String date;
   final MealBlock initialBlock;
+
+  /// Grams said in a phrase to the assistant (the user can change them).
+  final double? initialGrams;
 
   @override
   ConsumerState<AddItemSheet> createState() => _AddItemSheetState();
@@ -57,7 +62,7 @@ class AddItemSheet extends ConsumerStatefulWidget {
 
 class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   late MealBlock _block = widget.initialBlock;
-  double _grams = 100;
+  late double _grams = widget.initialGrams ?? 100;
   List<PantryItemRow> _stock = const [];
   int? _pantryId;
   bool _saving = false;
@@ -68,7 +73,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   void initState() {
     super.initState();
     final recipeId = _choice.recipeId;
-    if (recipeId != null) {
+    if (recipeId != null && widget.initialGrams == null) {
       final recipe = ref.read(referenceDbProvider)?.recipe(recipeId);
       if (recipe != null && recipe.totalGrams > 0) _grams = recipe.totalGrams.roundToDouble();
     }
