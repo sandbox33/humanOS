@@ -1,36 +1,36 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
+import 'package:humanos_core/humanos_core.dart' show ContextRule;
 
 /// Channels of the app. Every channel is private on the lock screen (only
 /// "HumanOS" shows until the phone is unlocked) and no text carries money
-/// amounts or place names.
+/// amounts or place names. The phone creates them (`Notices.kt`).
 enum ReminderChannel {
-  meals('humanos_comidas', 'Comidas', 'Recordatorios de comidas alrededor de tu trabajo'),
-  hydration('humanos_termo', 'Termo', 'Antes de un trabajo con calor y en su pausa'),
-  training('humanos_entreno', 'Heavy Duty', 'Día de la próxima sesión'),
-  dayClose('humanos_cierre', 'Cierre del día', 'Recordatorio opcional para registrar el día');
+  meals('humanos_comidas'),
+  hydration('humanos_termo'),
+  training('humanos_entreno'),
+  dayClose('humanos_cierre');
 
-  const ReminderChannel(this.id, this.nameEs, this.descriptionEs);
+  const ReminderChannel(this.id);
   final String id;
-  final String nameEs;
-  final String descriptionEs;
 }
 
-/// One reminder already checked against the notification policy.
+/// One reminder already checked against the notification policy. [rule]
+/// says what the phone does if it falls due in chamba or entreno.
 class ScheduledReminder {
   const ScheduledReminder({
     required this.channel,
     required this.at,
     required this.title,
     required this.body,
+    this.rule = ContextRule.allow,
   });
 
   final ReminderChannel channel;
   final DateTime at;
   final String title;
   final String body;
+  final ContextRule rule;
 }
 
 abstract class NotificationService {
@@ -44,51 +44,74 @@ abstract class NotificationService {
   Future<void> scheduleAll(List<ScheduledReminder> reminders);
 }
 
-class LocalNotificationService implements NotificationService {
+/// A morning alarm as the phone schedules it.
+class AlarmSpec {
+  const AlarmSpec({
+    required this.id,
+    required this.label,
+    required this.minuteOfDay,
+    required this.daysMask,
+    required this.snoozeMinutes,
+  });
+
+  final int id;
+  final String label;
+  final int minuteOfDay;
+  final int daysMask;
+  final int snoozeMinutes;
+
+  Map<String, Object> toMap() => {
+    'id': id,
+    'label': label,
+    'minuteOfDay': minuteOfDay,
+    'daysMask': daysMask,
+    'snoozeMin': snoozeMinutes,
+  };
+}
+
+abstract class AlarmService {
+  /// Replaces every alarm on the phone with [alarms].
+  Future<void> setAlarms(List<AlarmSpec> alarms);
+
+  /// Rings the alarm screen now, to check sound and volume.
+  Future<void> ringNow(String label);
+}
+
+/// What the phone holds right now (DIAGNÓSTICO).
+class SchedulerState {
+  const SchedulerState({required this.pending, required this.deferred, required this.next, required this.exact});
+
+  final int pending;
+  final int deferred;
+  final DateTime? next;
+  final bool exact;
+}
+
+/// Reminders and alarms scheduled by the phone itself (`Scheduler.kt`,
+/// `Alarms.kt`), so the location context can hold them back even with the
+/// app closed. flutter_local_notifications only asks for permissions and
+/// clears what older versions scheduled through it.
+class NativeNotificationService implements NotificationService, AlarmService {
+  static const _channel = MethodChannel('com.altair.humanos/scheduler');
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
-
-  /// Ids 100–(100 + [_maxScheduled]) belong to the scheduler.
-  static const _firstId = 100;
-  static const _maxScheduled = 120;
 
   AndroidFlutterLocalNotificationsPlugin? get _android =>
       _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-  static AndroidNotificationDetails _details(ReminderChannel c) => AndroidNotificationDetails(
-        c.id,
-        c.nameEs,
-        channelDescription: c.descriptionEs,
-        importance: c == ReminderChannel.dayClose ? Importance.defaultImportance : Importance.high,
-        priority: c == ReminderChannel.dayClose ? Priority.defaultPriority : Priority.high,
-        icon: 'ic_stat_humanos',
-        visibility: NotificationVisibility.private,
-      );
-
   @override
   Future<void> init() async {
     if (_ready) return;
-    tzdata.initializeTimeZones();
-    try {
-      final zone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(zone.identifier));
-    } on Object {
-      // Without the zone name, a zone with the phone's current offset still
-      // gives the right wall-clock times for the next days.
-      final now = DateTime.now();
-      final at = now.millisecondsSinceEpoch;
-      for (final location in tz.timeZoneDatabase.locations.values) {
-        if (location.timeZone(at).offset == now.timeZoneOffset) {
-          tz.setLocalLocation(location);
-          break;
-        }
-      }
-    }
     await _plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('ic_stat_humanos'),
       ),
     );
+    // Schedules left by earlier versions through the plugin. Only pending
+    // ones: an alarm ringing now is not touched.
+    for (final pending in await _plugin.pendingNotificationRequests()) {
+      await _plugin.cancel(id: pending.id);
+    }
     _ready = true;
   }
 
@@ -96,44 +119,57 @@ class LocalNotificationService implements NotificationService {
   Future<bool> requestPermissions({bool exactAlarms = false}) async {
     await init();
     final granted = await _android?.requestNotificationsPermission() ?? false;
-    if (exactAlarms) await _android?.requestExactAlarmsPermission();
+    if (exactAlarms) await _channel.invokeMethod<bool>('openExactAlarmSettings');
     return granted;
   }
 
-  Future<AndroidScheduleMode> _mode() async =>
-      (await _android?.canScheduleExactNotifications() ?? false)
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
-
   @override
   Future<void> scheduleAll(List<ScheduledReminder> reminders) async {
-    await init();
-    for (var i = 0; i < _maxScheduled; i++) {
-      await _plugin.cancel(id: _firstId + i);
-    }
-    final now = tz.TZDateTime.now(tz.local);
     final future = [
       for (final r in reminders)
-        if (tz.TZDateTime.from(r.at, tz.local).isAfter(now)) r,
+        if (r.at.isAfter(DateTime.now())) r,
     ]..sort((a, b) => a.at.compareTo(b.at));
-    final mode = await _mode();
-    for (var i = 0; i < future.length && i < _maxScheduled; i++) {
-      final r = future[i];
-      await _plugin.zonedSchedule(
-        id: _firstId + i,
-        title: r.title,
-        body: r.body,
-        scheduledDate: tz.TZDateTime.from(r.at, tz.local),
-        notificationDetails: NotificationDetails(android: _details(r.channel)),
-        androidScheduleMode: mode,
-      );
-    }
+    await _channel.invokeMethod<void>('setReminders', {
+      'reminders': [
+        for (var i = 0; i < future.length; i++)
+          {
+            'id': i,
+            'atMs': future[i].at.millisecondsSinceEpoch,
+            'channel': future[i].channel.id,
+            'title': future[i].title,
+            'body': future[i].body,
+            'rule': future[i].rule.code,
+          },
+      ],
+    });
+  }
+
+  @override
+  Future<void> setAlarms(List<AlarmSpec> alarms) =>
+      _channel.invokeMethod<void>('setAlarms', {'alarms': [for (final a in alarms) a.toMap()]});
+
+  @override
+  Future<void> ringNow(String label) => _channel.invokeMethod<void>('ringNow', {'label': label});
+
+  Future<SchedulerState?> state() async {
+    final m = await _channel.invokeMapMethod<String, Object?>('state');
+    if (m == null) return null;
+    final next = m['nextMs'] as int?;
+    return SchedulerState(
+      pending: m['pending'] as int? ?? 0,
+      deferred: m['deferred'] as int? ?? 0,
+      next: next == null ? null : DateTime.fromMillisecondsSinceEpoch(next),
+      exact: m['exact'] == true,
+    );
   }
 }
 
-/// No-op implementation for tests and platforms without notifications.
-class SilentNotificationService implements NotificationService {
+/// No-op implementation for tests and platforms without notifications;
+/// keeps what was scheduled so tests can read it.
+class SilentNotificationService implements NotificationService, AlarmService {
   final List<ScheduledReminder> scheduled = [];
+  final List<AlarmSpec> alarms = [];
+  final List<String> rung = [];
 
   @override
   Future<void> init() async {}
@@ -145,4 +181,14 @@ class SilentNotificationService implements NotificationService {
       ..clear()
       ..addAll(reminders);
   }
+
+  @override
+  Future<void> setAlarms(List<AlarmSpec> alarms) async {
+    this.alarms
+      ..clear()
+      ..addAll(alarms);
+  }
+
+  @override
+  Future<void> ringNow(String label) async => rung.add(label);
 }

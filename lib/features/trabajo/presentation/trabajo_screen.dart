@@ -11,6 +11,7 @@ import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/settings.dart';
 import '../../../data/user_db.dart';
+import '../../contexto/domain/context_model.dart';
 import '../../estado/domain/targets.dart';
 import '../domain/work_model.dart';
 import 'templates_page.dart';
@@ -91,11 +92,24 @@ class _QuickLogPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final templates = ref.watch(activeTemplatesProvider);
+    final suggested = ref.watch(suggestedTemplateProvider);
     return TerminalPanel(
       label: 'Registrar',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (suggested != null) ...[
+            Text('Sugerida por tu zona', style: Theme.of(context).textTheme.labelLarge),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                avatar: const Icon(Icons.place_outlined, size: 18),
+                label: Text(suggested.label),
+                onPressed: () => WorkEntrySheet.show(context, template: suggested),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (templates.isEmpty)
             const Note('Crea una plantilla (arriba a la derecha) para registrar en tres toques: '
                 'plantilla → horas → guardar.'),

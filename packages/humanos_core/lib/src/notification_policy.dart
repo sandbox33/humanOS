@@ -5,7 +5,9 @@
 ///   entry in progress), except in its break;
 /// * meal and day-close reminders never in quiet hours;
 /// * food-safety alerts that fall inside a work window move to its break or
-///   to its end.
+///   to its end;
+/// * while the location context silences notifications, each reminder
+///   follows its [ContextRule] (applied by the phone when it falls due).
 library;
 
 import 'assumptions.dart';
@@ -97,6 +99,44 @@ PolicyDecision evaluateNotification({
   }
   return const PolicyDecision._(allowed: true, reasonEs: 'Permitido.');
 }
+
+/// What the phone does with a reminder that falls due while the location
+/// context silences notifications (chamba or entreno).
+enum ContextRule {
+  /// Shown anyway: it was planned for that context.
+  allow('allow'),
+
+  /// Shown when the user leaves the zone, the same day.
+  defer('defer'),
+
+  /// Not shown: it would be stale later.
+  drop('drop');
+
+  const ContextRule(this.code);
+  final String code;
+}
+
+/// The rule for a reminder of [kind]. Thermos reminders and food-safety
+/// alerts are made for work; a meal planned in the break also passes.
+ContextRule contextRuleFor(
+  NotificationKind kind, {
+  bool inPlannedBreak = false,
+}) => switch (kind) {
+  NotificationKind.hydration ||
+  NotificationKind.foodSafety => ContextRule.allow,
+  NotificationKind.meal =>
+    inPlannedBreak ? ContextRule.allow : ContextRule.drop,
+  NotificationKind.session || NotificationKind.dayClose => ContextRule.defer,
+};
+
+/// True when [at] falls in the break of one of [windows].
+bool inPlannedBreak(DateTime at, List<WorkWindow> windows) => windows.any(
+  (w) =>
+      w.breakStart != null &&
+      w.breakEnd != null &&
+      !at.isBefore(w.breakStart!) &&
+      at.isBefore(w.breakEnd!),
+);
 
 /// First instant at or after [at] outside every silencing window: the next
 /// break start or window end, repeated while windows overlap.

@@ -100,7 +100,8 @@ const reminderDays = 7;
 /// Rebuilds every reminder of the next days. All of them pass the
 /// notification policy: nothing inside a work window (planned in a
 /// template or in progress) except its break, and meal or day-close
-/// reminders never in quiet hours.
+/// reminders never in quiet hours. Each carries its [ContextRule] for a
+/// zone that silences reminders (applied by the phone when it falls due).
 Future<void> rescheduleReminders(WidgetRef ref) async {
   final service = ref.read(notificationServiceProvider);
   final settings = ref.read(settingsProvider);
@@ -149,6 +150,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
             at: at,
             title: slot.block.labelEs,
             body: '${slot.clock} · ${slot.contextEs}',
+            rule: contextRuleFor(NotificationKind.meal, inPlannedBreak: inPlannedBreak(at, windows)),
           ));
         }
       }
@@ -165,6 +167,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
             at: r.at,
             title: r.titleEs,
             body: r.bodyEs,
+            rule: contextRuleFor(NotificationKind.hydration),
           ));
         }
       }
@@ -178,6 +181,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
           at: end,
           title: 'HEAVY DUTY',
           body: 'Sesión ${plan.template.code} · ${plan.mode.labelEs}. Antes, revisa tu estado.',
+          rule: contextRuleFor(NotificationKind.session),
         ));
       }
     }
@@ -192,6 +196,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
             at: at,
             title: 'CIERRE DEL DÍA',
             body: '¿Registraste tu trabajo y tus comidas de hoy?',
+            rule: contextRuleFor(NotificationKind.dayClose),
           ));
         }
       } on FormatException {

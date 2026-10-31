@@ -65,11 +65,12 @@ humanOS/
 │  │  └─ local/                user-provided local tables (optional)
 │  └─ tests/                   pytest
 ├─ packages/humanos_core/      pure Dart engines (no Flutter imports)
-│  ├─ lib/src/                 adaptive_tdee, macro_targets, sweat_hydration,
+│  ├─ lib/src/                 adaptive_tdee, macro_targets, hydration_plan,
 │  │                           readiness, double_progression, rep_tempo, e1rm,
 │  │                           pantry_scorer, lp_simplex, streaks, attributes,
 │  │                           interaction_rules, cooked_food_safety, schedule,
-│  │                           assumptions, confidence, day, format_es
+│  │                           work, money, notification_policy, context_mode,
+│  │                           alarms, assumptions, confidence, day, format_es
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/
 ├─ lib/                        Flutter app
@@ -77,7 +78,9 @@ humanOS/
 │  ├─ app/                     router, theme, providers, shared widgets
 │  ├─ data/                    reference_db, user_db (drift), tables/, seed, export
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
-│  └─ features/<estado|registro|despensa|indice|heavy_duty|turno|habitos|ajustes>/
+│  ├─ services/                notifications (native scheduler), device_context, …
+│  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
+│        alarmas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -118,6 +121,11 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `food_user_flags` | `user_excluded`, `user_trigger_reflux` | §5.2 user flags cannot live in the read-only DB |
 | user `app_settings` | key/value | accent colour, toggles, onboarding state |
 | user `daily_logs.intake_complete` | bool, default false | "DÍA COMPLETO": only confirmed days feed the adaptive TDEE |
+| user `work_entries`, `work_templates` (schema 2) | new tables | flexible work: cents and minutes, across midnight, user templates |
+| user `daily_logs` (schema 2) | `heat_minutes`, `sweat_feel`, `effort_feel`, `mood`, `thermo_pre`, `thermo_break`; sweat test out | the thermos plan replaces the sweat-rate test |
+| user `purchases.total_cents`, `pantry_items.price_cents_per_kg` (schema 2) | integer cents | no `double` for money |
+| user `zones`, `context_events`, `mode_corrections`, `state_checkins`, `event_reminders` (schema 3) | new tables | location context: zones are user data; only ENTER/EXIT with a timestamp, no position history |
+| user `morning_alarms` (schema 3) | new table | morning alarms rung by the phone |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
 SQLite (with FTS5) through build hooks, so the app depends on `drift`,
@@ -131,6 +139,24 @@ the display on with `FLAG_KEEP_SCREEN_ON` through the app's own channel
 
 `build_runner` 2.16 removed `--delete-conflicting-outputs`; workflows run
 `dart run build_runner build`.
+
+Every schema version has its export in `drift_schemas/` (CI fails if the
+code and the saved export differ). A migration copies `user.sqlite` to
+`backups/` first, counts every table's rows after, and restores the copy on
+any loss (`lib/data/db_open.dart`).
+
+Reminders and alarms are scheduled by the phone (`Scheduler.kt`,
+`Alarms.kt`, channel `com.altair.humanos/scheduler`), not by
+flutter_local_notifications, so a zone that silences reminders (chamba or
+entreno) applies even with the app closed: each reminder carries its
+`ContextRule` (allow / defer / drop). Zones use Google Play services'
+`GeofencingClient` only (`play-services-location`, channel
+`com.altair.humanos/context`): no foreground location service, no
+continuous location updates. What the phone needs while the app is closed
+(zones to re-register after a reboot, pending reminders, alarms, unread
+transitions) lives in small AES-GCM files keyed by the Android Keystore
+(`SecureStore.kt`) and is rebuilt from the encrypted database on every
+start.
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,

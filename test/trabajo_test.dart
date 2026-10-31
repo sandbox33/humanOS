@@ -97,6 +97,11 @@ void main() {
     for (final r in scheduled) {
       expect(r.body.contains('USD'), isFalse, reason: 'no money in notifications');
     }
+    // What the phone does if the reminder falls due inside a silencing zone.
+    final meals = {for (final r in scheduled.where((r) => r.channel == ReminderChannel.meals)) r.at: r.rule};
+    expect(meals[DateTime(2026, 10, 30, 12)], ContextRule.allow, reason: 'lunch in the break');
+    expect(meals[DateTime(2026, 10, 30, 7, 15)], ContextRule.drop, reason: 'breakfast before work');
+    expect(thermos.every((r) => r.rule == ContextRule.allow), isTrue);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
