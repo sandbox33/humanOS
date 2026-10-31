@@ -6,9 +6,7 @@
 /// `mean(intake) - slope_kg_per_day * kcalPerKg`, but only when at least
 /// [TdeeParams.minValidDays] days have a complete intake log. Otherwise the
 /// estimate is null ("datos insuficientes") and the Mifflin bootstrap is
-/// used instead. The bootstrap is Mifflin × PAL (from the job type) plus a
-/// goal term: the somatotype surplus when gaining (a weak, descriptive
-/// prior), zero when maintaining, the middle of the loss band when losing.
+/// used instead.
 library;
 
 import 'assumptions.dart';
@@ -36,63 +34,6 @@ class DayRecord {
   bool get hasValidIntake => intakeComplete && intakeKcal != null;
 }
 
-/// Weight goal from the profile (`profile.goal`).
-enum Goal {
-  ganar('ganar', 'Ganar peso'),
-  mantener('mantener', 'Mantener'),
-  perder('perder', 'Perder grasa');
-
-  const Goal(this.code, this.labelEs);
-  final String code;
-  final String labelEs;
-
-  static Goal parse(String? code) =>
-      Goal.values.firstWhere((g) => g.code == code, orElse: () => Goal.ganar);
-}
-
-/// Self-described somatotype (`profile.somatotype`). Only a starting prior.
-enum Somatotype {
-  ecto('ecto', 'Ectomorfo'),
-  meso('meso', 'Mesomorfo'),
-  endo('endo', 'Endomorfo'),
-  noSe('no_se', 'No sé');
-
-  const Somatotype(this.code, this.labelEs);
-  final String code;
-  final String labelEs;
-
-  static Somatotype parse(String? code) => Somatotype.values.firstWhere(
-    (s) => s.code == code,
-    orElse: () => Somatotype.noSe,
-  );
-}
-
-/// Physical demand of the job (`profile.job_type`), sets the PAL prior.
-enum JobType {
-  heavy('pesado', 'Trabajo manual pesado'),
-  moderate('moderado', 'Trabajo moderado'),
-  desk('escritorio', 'Trabajo de escritorio');
-
-  const JobType(this.code, this.labelEs);
-  final String code;
-  final String labelEs;
-
-  static JobType parse(String? code) => JobType.values.firstWhere(
-    (j) => j.code == code,
-    orElse: () => JobType.heavy,
-  );
-}
-
-/// Weekly rate band (kg/week) for a goal.
-class RateBand {
-  const RateBand(this.minKgWeek, this.maxKgWeek);
-  final double minKgWeek;
-  final double maxKgWeek;
-
-  double get midKgWeek => (minKgWeek + maxKgWeek) / 2;
-  bool contains(double rate) => rate >= minKgWeek && rate <= maxKgWeek;
-}
-
 /// Parameters read from the assumptions table.
 class TdeeParams {
   const TdeeParams({
@@ -105,16 +46,7 @@ class TdeeParams {
     required this.targetStepMaxKcal,
     required this.palWorkday,
     required this.palOffday,
-    required this.maintainRateMinKgWeek,
-    required this.maintainRateMaxKgWeek,
-    required this.loseRateMinKgWeek,
-    required this.loseRateMaxKgWeek,
-    required this.surplusEctoKcal,
-    required this.surplusMesoKcal,
-    required this.surplusEndoKcal,
-    required this.surplusUnknownKcal,
-    required this.palJobModerate,
-    required this.palJobDesk,
+    required this.bootstrapSurplusKcal,
   });
 
   factory TdeeParams.fromAssumptions(Assumptions a) => TdeeParams(
@@ -127,16 +59,7 @@ class TdeeParams {
     targetStepMaxKcal: a[A.targetStepMaxKcal],
     palWorkday: a[A.palWorkday],
     palOffday: a[A.palOffday],
-    maintainRateMinKgWeek: a[A.maintainRateMinKgWeek],
-    maintainRateMaxKgWeek: a[A.maintainRateMaxKgWeek],
-    loseRateMinKgWeek: a[A.loseRateMinKgWeek],
-    loseRateMaxKgWeek: a[A.loseRateMaxKgWeek],
-    surplusEctoKcal: a[A.surplusEctoKcal],
-    surplusMesoKcal: a[A.surplusMesoKcal],
-    surplusEndoKcal: a[A.surplusEndoKcal],
-    surplusUnknownKcal: a[A.surplusUnknownKcal],
-    palJobModerate: a[A.palJobModerate],
-    palJobDesk: a[A.palJobDesk],
+    bootstrapSurplusKcal: a[A.bootstrapSurplusKcal],
   );
 
   final double emaAlpha;
@@ -146,39 +69,9 @@ class TdeeParams {
   final double gainRateMinKgWeek;
   final double gainRateMaxKgWeek;
   final double targetStepMaxKcal;
-
-  /// PAL of a heavy manual workday.
   final double palWorkday;
   final double palOffday;
-  final double maintainRateMinKgWeek;
-  final double maintainRateMaxKgWeek;
-  final double loseRateMinKgWeek;
-  final double loseRateMaxKgWeek;
-  final double surplusEctoKcal;
-  final double surplusMesoKcal;
-  final double surplusEndoKcal;
-  final double surplusUnknownKcal;
-  final double palJobModerate;
-  final double palJobDesk;
-
-  RateBand rateBand(Goal goal) => switch (goal) {
-    Goal.ganar => RateBand(gainRateMinKgWeek, gainRateMaxKgWeek),
-    Goal.mantener => RateBand(maintainRateMinKgWeek, maintainRateMaxKgWeek),
-    Goal.perder => RateBand(loseRateMinKgWeek, loseRateMaxKgWeek),
-  };
-
-  double surplusFor(Somatotype somatotype) => switch (somatotype) {
-    Somatotype.ecto => surplusEctoKcal,
-    Somatotype.meso => surplusMesoKcal,
-    Somatotype.endo => surplusEndoKcal,
-    Somatotype.noSe => surplusUnknownKcal,
-  };
-
-  double palFor(JobType job) => switch (job) {
-    JobType.heavy => palWorkday,
-    JobType.moderate => palJobModerate,
-    JobType.desk => palJobDesk,
-  };
+  final double bootstrapSurplusKcal;
 }
 
 /// A point of the smoothed weight trend.
@@ -354,15 +247,14 @@ class TargetAdjustment {
   bool get changed => stepKcal != 0;
 }
 
-/// Weekly review: moves the intake target toward the rate band of [goal]
-/// (ganar +0.15…+0.30 kg/week by default), aiming at its middle, by at most
+/// Weekly review: moves the intake target toward the gain band
+/// [gainRateMinKgWeek, gainRateMaxKgWeek], aiming at its middle, by at most
 /// [TdeeParams.targetStepMaxKcal]. Without a sufficient estimate the target
 /// never changes.
 TargetAdjustment weeklyTargetAdjustment({
   required double currentTargetKcal,
   required TdeeEstimate estimate,
   required TdeeParams params,
-  Goal goal = Goal.ganar,
 }) {
   final tdee = estimate.tdeeKcal;
   final rate = estimate.weeklyRateKg;
@@ -373,16 +265,17 @@ TargetAdjustment weeklyTargetAdjustment({
       reasonEs: 'El objetivo no cambia: ${estimate.reasonEs}',
     );
   }
-  final band = params.rateBand(goal);
-  final change = 'Cambio de ${formatDecimal(rate, decimals: 2)} kg/semana';
-  if (band.contains(rate)) {
+  if (rate >= params.gainRateMinKgWeek && rate <= params.gainRateMaxKgWeek) {
     return TargetAdjustment(
       previousTargetKcal: currentTargetKcal,
       newTargetKcal: currentTargetKcal,
-      reasonEs: '$change, dentro del rango: el objetivo se mantiene.',
+      reasonEs:
+          'Ganancia de ${formatDecimal(rate, decimals: 2)} kg/semana, '
+          'dentro del rango: el objetivo se mantiene.',
     );
   }
-  final desired = tdee + band.midKgWeek * params.kcalPerKg / 7;
+  final mid = (params.gainRateMinKgWeek + params.gainRateMaxKgWeek) / 2;
+  final desired = tdee + mid * params.kcalPerKg / 7;
   final step = (desired - currentTargetKcal)
       .clamp(-params.targetStepMaxKcal, params.targetStepMaxKcal)
       .toDouble();
@@ -391,8 +284,9 @@ TargetAdjustment weeklyTargetAdjustment({
     previousTargetKcal: currentTargetKcal,
     newTargetKcal: currentTargetKcal + step,
     reasonEs:
-        '$change, fuera del rango ${formatDecimal(band.minKgWeek, decimals: 2)}'
-        '–${formatDecimal(band.maxKgWeek, decimals: 2)}: el objetivo '
+        'Ganancia de ${formatDecimal(rate, decimals: 2)} kg/semana, '
+        'fuera del rango ${formatDecimal(params.gainRateMinKgWeek, decimals: 2)}'
+        '–${formatDecimal(params.gainRateMaxKgWeek, decimals: 2)}: el objetivo '
         '$direction ${formatWhole(step.abs())} kcal.',
   );
 }
@@ -422,39 +316,11 @@ double mifflinBmr({
 /// Age in whole years from a birth year (birthday not stored).
 int ageFromBirthYear(int birthYear, DateTime today) => today.year - birthYear;
 
-/// PAL for the day: the job PAL on workdays, never more than that on an
-/// off day.
-double dayPal({
-  required bool workday,
-  required JobType job,
-  required TdeeParams params,
-}) {
-  final jobPal = params.palFor(job);
-  if (workday) return jobPal;
-  return params.palOffday < jobPal ? params.palOffday : jobPal;
-}
-
-/// Goal term of the bootstrap: somatotype surplus when gaining, zero when
-/// maintaining, the middle of the loss band (negative) when losing.
-double bootstrapGoalKcal({
-  required Goal goal,
-  required Somatotype somatotype,
-  required TdeeParams params,
-}) => switch (goal) {
-  Goal.ganar => params.surplusFor(somatotype),
-  Goal.mantener => 0,
-  Goal.perder => params.rateBand(Goal.perder).midKgWeek * params.kcalPerKg / 7,
-};
-
-/// Bootstrap intake target: Mifflin × PAL + goal term. Used until the
-/// adaptive estimate has enough complete days.
+/// Bootstrap intake target: Mifflin × PAL (workday or off-day) + surplus.
 double bootstrapTargetKcal({
   required double bmr,
   required bool workday,
   required TdeeParams params,
-  Goal goal = Goal.ganar,
-  Somatotype somatotype = Somatotype.noSe,
-  JobType job = JobType.heavy,
 }) =>
-    bmr * dayPal(workday: workday, job: job, params: params) +
-    bootstrapGoalKcal(goal: goal, somatotype: somatotype, params: params);
+    bmr * (workday ? params.palWorkday : params.palOffday) +
+    params.bootstrapSurplusKcal;

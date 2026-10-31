@@ -1,75 +1,40 @@
 /// RPG-style attributes tied to real data (no variable rewards).
 ///
 /// * FUERZA — Σ current e1RM / Σ baseline e1RM × 100 (same exercises).
-/// * RESISTENCIA — mean of the share of workdays with the shift logged
-///   (effort or sweat) and the share of hydration reminders acknowledged.
-/// * NUTRICIÓN — share of DÍA COMPLETO days whose kcal are within the
-///   tolerance of the target and whose protein reaches the target minus
-///   the tolerance.
-/// * RECUPERACIÓN — mean of a sleep score (7-night mean / target) and a
-///   readiness score (VERDE 1, AMARILLO ½, ROJO 0 over the window).
-/// * DISCIPLINA — mean of the minimum-day rate, the sober rate and the
-///   screen-limit rate over days with data.
+/// * RESISTENCIA — % of shifts in the window with hydration ≥ 80 % of plan.
+/// * RECUPERACIÓN — mean of a sleep score (7-night mean / target) and an
+///   RHR score (1 at or below baseline, 0 at baseline + 2 SD).
+/// * DISCIPLINA — mean of the sober rate, the screen-limit rate and the
+///   minimum-day rate over days with data.
 /// Missing inputs give null, never zero.
 library;
 
 import 'assumptions.dart';
 import 'day.dart';
-import 'readiness.dart';
 
 enum AttributeKind {
-  fuerza('FUERZA', 'FUERZA'),
-  resistencia('RESISTENCIA', 'RESISTENCIA'),
-  nutricion('NUTRICION', 'NUTRICIÓN'),
-  recuperacion('RECUPERACION', 'RECUPERACIÓN'),
-  disciplina('DISCIPLINA', 'DISCIPLINA');
+  fuerza('FUERZA'),
+  resistencia('RESISTENCIA'),
+  recuperacion('RECUPERACION'),
+  disciplina('DISCIPLINA');
 
-  const AttributeKind(this.code, this.labelEs);
-
-  /// Code stored in `attributes.attr` and `xp_log.attr`.
+  const AttributeKind(this.code);
   final String code;
-  final String labelEs;
 
-  static AttributeKind? parse(String? code) {
-    for (final kind in AttributeKind.values) {
-      if (kind.code == code) return kind;
-    }
-    return null;
-  }
+  String get labelEs =>
+      this == AttributeKind.recuperacion ? 'RECUPERACIÓN' : code;
 }
 
-/// One workday: whether the shift was logged and the hydration reminders.
-class ShiftDay {
-  const ShiftDay({
+class ShiftHydration {
+  const ShiftHydration({
     required this.date,
-    required this.logged,
-    this.remindersSent = 0,
-    this.remindersAcked = 0,
+    required this.plannedL,
+    required this.drankL,
   });
 
   final DateTime date;
-
-  /// Effort or sweat feel was recorded for the shift.
-  final bool logged;
-  final int remindersSent;
-  final int remindersAcked;
-}
-
-/// A DÍA COMPLETO day with its targets.
-class NutritionDay {
-  const NutritionDay({
-    required this.date,
-    required this.kcal,
-    required this.kcalTarget,
-    required this.proteinG,
-    required this.proteinTargetG,
-  });
-
-  final DateTime date;
-  final double kcal;
-  final double kcalTarget;
-  final double proteinG;
-  final double proteinTargetG;
+  final double plannedL;
+  final double? drankL;
 }
 
 class DisciplineDay {
@@ -89,19 +54,22 @@ class DisciplineDay {
 class AttributeParams {
   const AttributeParams({
     required this.windowDays,
+    required this.hydrationGoal,
     required this.sleepTargetH,
-    required this.nutritionTolerance,
+    required this.rhrZeroSd,
   });
 
   factory AttributeParams.fromAssumptions(Assumptions a) => AttributeParams(
     windowDays: a.integer(A.attrWindowDays),
+    hydrationGoal: a[A.hydrationGoalFraction],
     sleepTargetH: a[A.sleepTargetH],
-    nutritionTolerance: a[A.attrNutritionTolerance],
+    rhrZeroSd: a[A.attrRhrZeroSd],
   );
 
   final int windowDays;
+  final double hydrationGoal;
   final double sleepTargetH;
-  final double nutritionTolerance;
+  final double rhrZeroSd;
 }
 
 class AttributeInputs {
@@ -109,10 +77,11 @@ class AttributeInputs {
     required this.today,
     this.e1rmCurrent = const {},
     this.e1rmBaseline = const {},
-    this.shiftDays = const [],
-    this.nutritionDays = const [],
+    this.shifts = const [],
     this.sleepHoursLast7 = const [],
-    this.readinessBands = const {},
+    this.rhrRecentMean,
+    this.rhrBaselineMean,
+    this.rhrBaselineSd,
     this.disciplineDays = const [],
     this.screenLimitMinutes,
   });
@@ -120,48 +89,26 @@ class AttributeInputs {
   final DateTime today;
   final Map<int, double> e1rmCurrent;
   final Map<int, double> e1rmBaseline;
-  final List<ShiftDay> shiftDays;
-  final List<NutritionDay> nutritionDays;
+  final List<ShiftHydration> shifts;
   final List<double> sleepHoursLast7;
-
-  /// Readiness per day; only days with real data (not "sin datos").
-  final Map<DateTime, ReadinessBand> readinessBands;
+  final double? rhrRecentMean;
+  final double? rhrBaselineMean;
+  final double? rhrBaselineSd;
   final List<DisciplineDay> disciplineDays;
   final double? screenLimitMinutes;
 }
 
 double _clamp01(double v) => v < 0 ? 0 : (v > 1 ? 1 : v);
 
-double? _meanOrNull(List<double> values) => values.isEmpty
-    ? null
-    : values.reduce((a, b) => a + b) / values.length * 100;
-
-/// Whether [day] hits both kcal (± tolerance) and protein (≥ target −
-/// tolerance).
-bool nutritionDayHit(NutritionDay day, double tolerance) {
-  if (day.kcalTarget <= 0 || day.proteinTargetG <= 0) return false;
-  final kcalOk =
-      (day.kcal - day.kcalTarget).abs() <= tolerance * day.kcalTarget;
-  final proteinOk = day.proteinG >= (1 - tolerance) * day.proteinTargetG;
-  return kcalOk && proteinOk;
-}
-
-/// Readiness score of one band (VERDE 1, AMARILLO ½, ROJO 0).
-double readinessScore(ReadinessBand band) => switch (band) {
-  ReadinessBand.verde => 1,
-  ReadinessBand.amarillo => 0.5,
-  ReadinessBand.rojo => 0,
-};
-
-/// Computes the five attributes (0–100; FUERZA can exceed 100).
+/// Computes the four attributes (0–100 scale; FUERZA can exceed 100).
 Map<AttributeKind, double?> computeAttributes(
   AttributeInputs input,
   AttributeParams params,
 ) {
   final windowStart = addDays(input.today, -(params.windowDays - 1));
-  final end = dateOnly(input.today);
   bool inWindow(DateTime d) =>
-      !dateOnly(d).isBefore(windowStart) && !dateOnly(d).isAfter(end);
+      !dateOnly(d).isBefore(windowStart) &&
+      !dateOnly(d).isAfter(dateOnly(input.today));
 
   double? fuerza;
   var current = 0.0, baseline = 0.0;
@@ -173,24 +120,16 @@ Map<AttributeKind, double?> computeAttributes(
   }
   if (baseline > 0) fuerza = current / baseline * 100;
 
-  final shiftRates = <double>[];
-  final shifts = input.shiftDays.where((s) => inWindow(s.date)).toList();
+  double? resistencia;
+  final shifts = input.shifts
+      .where((s) => inWindow(s.date) && s.plannedL > 0 && s.drankL != null)
+      .toList();
   if (shifts.isNotEmpty) {
-    shiftRates.add(shifts.where((s) => s.logged).length / shifts.length);
-    final sent = shifts.fold<int>(0, (sum, s) => sum + s.remindersSent);
-    final acked = shifts.fold<int>(0, (sum, s) => sum + s.remindersAcked);
-    if (sent > 0) shiftRates.add(_clamp01(acked / sent));
+    final ok = shifts
+        .where((s) => s.drankL! / s.plannedL >= params.hydrationGoal)
+        .length;
+    resistencia = ok / shifts.length * 100;
   }
-  final resistencia = _meanOrNull(shiftRates);
-
-  final nutrition = input.nutritionDays.where((d) => inWindow(d.date)).toList();
-  final nutricion = nutrition.isEmpty
-      ? null
-      : nutrition
-                .where((d) => nutritionDayHit(d, params.nutritionTolerance))
-                .length /
-            nutrition.length *
-            100;
 
   final recoveryParts = <double>[];
   if (input.sleepHoursLast7.isNotEmpty && params.sleepTargetH > 0) {
@@ -199,23 +138,26 @@ Map<AttributeKind, double?> computeAttributes(
         input.sleepHoursLast7.length;
     recoveryParts.add(_clamp01(mean / params.sleepTargetH));
   }
-  final bands = input.readinessBands.entries
-      .where((e) => inWindow(e.key))
-      .map((e) => readinessScore(e.value))
-      .toList();
-  if (bands.isNotEmpty) {
-    recoveryParts.add(bands.reduce((a, b) => a + b) / bands.length);
+  final recent = input.rhrRecentMean;
+  final base = input.rhrBaselineMean;
+  if (recent != null && base != null) {
+    final sd = input.rhrBaselineSd ?? 0;
+    if (recent <= base) {
+      recoveryParts.add(1);
+    } else if (sd <= 0) {
+      recoveryParts.add(0);
+    } else {
+      recoveryParts.add(
+        _clamp01(1 - (recent - base) / (params.rhrZeroSd * sd)),
+      );
+    }
   }
-  final recuperacion = _meanOrNull(recoveryParts);
+  final recuperacion = recoveryParts.isEmpty
+      ? null
+      : recoveryParts.reduce((a, b) => a + b) / recoveryParts.length * 100;
 
   final rates = <double>[];
   final days = input.disciplineDays.where((d) => inWindow(d.date)).toList();
-  final minimumDays = days.where((d) => d.minimumMet != null).toList();
-  if (minimumDays.isNotEmpty) {
-    rates.add(
-      minimumDays.where((d) => d.minimumMet!).length / minimumDays.length,
-    );
-  }
   final soberDays = days.where((d) => d.sober != null).toList();
   if (soberDays.isNotEmpty) {
     rates.add(soberDays.where((d) => d.sober!).length / soberDays.length);
@@ -228,12 +170,19 @@ Map<AttributeKind, double?> computeAttributes(
           screenDays.length,
     );
   }
-  final disciplina = _meanOrNull(rates);
+  final minimumDays = days.where((d) => d.minimumMet != null).toList();
+  if (minimumDays.isNotEmpty) {
+    rates.add(
+      minimumDays.where((d) => d.minimumMet!).length / minimumDays.length,
+    );
+  }
+  final disciplina = rates.isEmpty
+      ? null
+      : rates.reduce((a, b) => a + b) / rates.length * 100;
 
   return {
     AttributeKind.fuerza: fuerza,
     AttributeKind.resistencia: resistencia,
-    AttributeKind.nutricion: nutricion,
     AttributeKind.recuperacion: recuperacion,
     AttributeKind.disciplina: disciplina,
   };
