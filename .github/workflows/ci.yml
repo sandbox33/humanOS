@@ -88,6 +88,46 @@ jobs:
       # Every test by name, and none may hang the job.
       - run: flutter test --reporter expanded --timeout 90s
 
+  referencias:
+    name: Referencias externas (versiones, API, checksums)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Versiones publicadas en Google Maven
+        run: |
+          for a in com/google/android/gms/play-services-location com/google/ai/edge/litertlm/litertlm-android; do
+            echo "== $a"
+            curl -fsS "https://dl.google.com/dl/android/maven2/$a/maven-metadata.xml" | grep -E '<latest>|<release>|<lastUpdated>' || true
+          done
+      - name: API pública de litertlm-android
+        run: |
+          v=$(curl -fsS https://dl.google.com/dl/android/maven2/com/google/ai/edge/litertlm/litertlm-android/maven-metadata.xml | sed -n 's:.*<release>\(.*\)</release>.*:\1:p')
+          echo "version=$v"
+          curl -fsSLo litertlm.aar "https://dl.google.com/dl/android/maven2/com/google/ai/edge/litertlm/litertlm-android/$v/litertlm-android-$v.aar"
+          unzip -o -q litertlm.aar classes.jar AndroidManifest.xml
+          grep -o 'minSdkVersion="[0-9]*"' AndroidManifest.xml || true
+          unzip -l classes.jar | awk '{print $4}' | grep '\.class$' | grep -v '\$' | sed 's/\.class$//' | tr / . > classes.txt
+          wc -l classes.txt
+          for c in $(grep -E '\.(Engine|EngineConfig|Backend|Conversation|ConversationConfig|SamplerConfig|Message|Content|Contents|LiteRtLmJniException)$' classes.txt); do
+            javap -public -classpath classes.jar "$c" || true
+          done
+          curl -fsS "https://dl.google.com/dl/android/maven2/com/google/ai/edge/litertlm/litertlm-android/$v/litertlm-android-$v.pom" | grep -A3 '<dependency>' | grep -E 'groupId|artifactId|version' || true
+      - name: Modelos oficiales en Hugging Face (tamaño y SHA-256)
+        run: |
+          for repo in litert-community/gemma-3-270m-it litert-community/Gemma3-1B-IT; do
+            echo "== $repo"
+            curl -fsS "https://huggingface.co/api/models/$repo/tree/main" | python3 -c "
+          import json, sys
+          for f in json.load(sys.stdin):
+              if f['path'].endswith(('.litertlm', '.task')):
+                  print(f['path'], f.get('size'), (f.get('lfs') or {}).get('oid'))
+          " || true
+            curl -fsS "https://huggingface.co/api/models/$repo" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          print('gated:', d.get('gated'), 'license:', (d.get('cardData') or {}).get('license'))
+          " || true
+          done
+
   android:
     name: APK de prueba (firma de depuración)
     needs: app

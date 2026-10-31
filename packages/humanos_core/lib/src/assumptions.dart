@@ -21,7 +21,8 @@ enum AssumptionGroup {
   horario('HORARIO DE COMIDAS'),
   atributos('ATRIBUTOS'),
   avisos('AVISOS'),
-  contexto('CONTEXTO');
+  contexto('CONTEXTO'),
+  asistente('ASISTENTE');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -185,6 +186,10 @@ abstract final class A {
   static const contextStaleH = 'context_stale_h';
   static const lowStateMax = 'low_state_max';
   static const alarmSnoozeMin = 'alarm_snooze_min';
+  static const assistantMinAccuracy = 'assistant_min_accuracy';
+  static const llmTimeoutS = 'llm_timeout_s';
+  static const llmIdleS = 'llm_idle_s';
+  static const llmMaxTokens = 'llm_max_tokens';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1577,6 +1582,53 @@ const List<AssumptionDef> assumptionCatalog = [
     explainEs:
         'Minutos que propone una alarma nueva para posponer; cada alarma '
         'guarda los suyos.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.assistantMinAccuracy,
+    value: 0.9,
+    min: 0.5,
+    max: 1,
+    unitEs: 'fracción',
+    group: AssumptionGroup.asistente,
+    titleEs: 'Exactitud mínima del modelo',
+    explainEs:
+        'El modelo del teléfono se activa por defecto solo si acierta al menos '
+        'el 90 % de las frases de prueba. Siempre confirmas antes de guardar.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.llmTimeoutS,
+    value: 15,
+    min: 3,
+    max: 60,
+    unitEs: 's',
+    group: AssumptionGroup.asistente,
+    titleEs: 'Tiempo máximo por frase',
+    explainEs: 'Si el modelo tarda más, se abre el formulario vacío.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.llmIdleS,
+    value: 60,
+    min: 10,
+    max: 600,
+    unitEs: 's',
+    group: AssumptionGroup.asistente,
+    titleEs: 'Descargar el modelo de la memoria',
+    explainEs: 'Tras 60 s sin uso el modelo sale de la memoria del teléfono.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.llmMaxTokens,
+    value: 1024,
+    min: 256,
+    max: 4096,
+    unitEs: 'tokens',
+    group: AssumptionGroup.asistente,
+    titleEs: 'Contexto del modelo',
+    explainEs:
+        'Tamaño de la frase y la respuesta que el modelo procesa a la vez.',
     source: _model,
   ),
 ];

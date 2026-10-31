@@ -54,6 +54,8 @@ flutter:
     - assets/db/
     - assets/audio/
     - assets/fonts/
+    # Invented phrases to measure the assistant on the phone (no one's data).
+    - assets/eval/
   shaders:
     - assets/shaders/crt.frag
   fonts:
