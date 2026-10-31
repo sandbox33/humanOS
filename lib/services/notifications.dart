@@ -75,7 +75,16 @@ class LocalNotificationService implements NotificationService {
       final zone = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(zone.identifier));
     } on Object {
-      tz.setLocalLocation(tz.getLocation('America/Guayaquil'));
+      // Without the zone name, a zone with the phone's current offset still
+      // gives the right wall-clock times for the next days.
+      final now = DateTime.now();
+      final at = now.millisecondsSinceEpoch;
+      for (final location in tz.timeZoneDatabase.locations.values) {
+        if (location.timeZone(at).offset == now.timeZoneOffset) {
+          tz.setLocalLocation(location);
+          break;
+        }
+      }
     }
     await _plugin.initialize(
       settings: const InitializationSettings(

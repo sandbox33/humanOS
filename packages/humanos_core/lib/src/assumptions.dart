@@ -1252,7 +1252,7 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.seguridad,
     titleEs: 'Al calor: aviso',
     explainEs:
-        'Si la comida estuvo al calor (taller, lonchera al sol), a los '
+        'Si la comida estuvo al calor (lonchera al sol, lugar caluroso), a los '
         '30 min se avisa.',
     source: _model,
   ),
