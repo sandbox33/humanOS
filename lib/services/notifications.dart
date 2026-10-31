@@ -5,7 +5,9 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 /// Local reminders: meals from the shift schedule, hydration nudges during
-/// declared heat hours, and the next Heavy Duty day.
+/// declared heat hours, and the next Heavy Duty day. Every channel is
+/// private on the lock screen (only "HumanOS" shows until unlocked) and no
+/// text carries money amounts or place names.
 abstract class NotificationService {
   Future<void> init();
   /// Asks for notification permission; [exactAlarms] also opens the
@@ -41,6 +43,7 @@ class LocalNotificationService implements NotificationService {
     importance: Importance.high,
     priority: Priority.high,
     icon: 'ic_stat_humanos',
+    visibility: NotificationVisibility.private,
   );
   static const _water = AndroidNotificationDetails(
     'humanos_hidratacion',
@@ -49,6 +52,7 @@ class LocalNotificationService implements NotificationService {
     importance: Importance.high,
     priority: Priority.high,
     icon: 'ic_stat_humanos',
+    visibility: NotificationVisibility.private,
   );
   static const _training = AndroidNotificationDetails(
     'humanos_entreno',
@@ -56,6 +60,7 @@ class LocalNotificationService implements NotificationService {
     channelDescription: 'Día de la próxima sesión',
     importance: Importance.defaultImportance,
     icon: 'ic_stat_humanos',
+    visibility: NotificationVisibility.private,
   );
 
   AndroidFlutterLocalNotificationsPlugin? get _android =>

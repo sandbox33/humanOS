@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/onboarding/profile_setup_screen.dart';
 import 'providers.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -68,7 +69,23 @@ class _HumanOsAppState extends ConsumerState<HumanOsApp> {
       locale: const Locale('es', 'EC'),
       supportedLocales: const [Locale('es', 'EC'), Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: const AppShell(),
+      home: const ProfileGate(),
     );
+  }
+}
+
+/// New installs start on the profile screen; afterwards the app shell.
+class ProfileGate extends ConsumerWidget {
+  const ProfileGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider);
+    return switch (profile) {
+      AsyncData(value: null) => const ProfileSetupScreen(),
+      AsyncData() => const AppShell(),
+      AsyncError(:final error) => Scaffold(body: Center(child: Text('$error'))),
+      _ => const Scaffold(body: Center(child: CircularProgressIndicator())),
+    };
   }
 }

@@ -16,6 +16,7 @@ import '../../../app/widgets/gram_stepper.dart';
 import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/backup_service.dart';
+import '../../../data/db_open.dart';
 import '../../../data/export_crypto.dart';
 import '../../../data/settings.dart';
 import '../../../data/user_db.dart';
@@ -376,6 +377,7 @@ class _BackupPanel extends ConsumerWidget {
             'Cifrada con AES-256-GCM y tu contraseña (PBKDF2). Tú eliges dónde '
             'guardarla. Sin la contraseña no se puede abrir.',
           ),
+          const Note(dbKeyRiskEs),
           BigButton(
             label: 'Exportar copia cifrada',
             icon: Icons.lock_outline,

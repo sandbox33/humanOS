@@ -278,10 +278,10 @@ const List<AssumptionDef> assumptionCatalog = [
     min: 1.2,
     max: 2.5,
     group: AssumptionGroup.energia,
-    titleEs: 'Factor de actividad en día de taller',
+    titleEs: 'Factor de actividad en día de trabajo',
     explainEs:
-        'Arranque: gasto basal de Mifflin × 1,9 en día de trabajo '
-        '(soldadura de pie, 10 h, y entrenamiento después del turno).',
+        'Arranque: gasto basal de Mifflin × 1,9 en día de trabajo físico '
+        'pesado con entrenamiento. Edítalo si tu trabajo es más liviano.',
     source:
         'Mifflin MD y col., Am J Clin Nutr 1990;51:241–247 (fórmula). '
         'Factor: supuesto',

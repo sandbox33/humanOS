@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:humanos_core/humanos_core.dart';
 
-import 'settings.dart';
 import 'user_db.dart';
 
 /// Habit sources filled automatically from other data.
@@ -15,23 +14,16 @@ abstract final class HabitSource {
   static const sleepHours = 'sleep_h';
 }
 
-/// First-launch seed: profile, every assumption of the catalogue, the
-/// habits (discreet aliases) and the three meal templates. Runs inside one
-/// transaction and only when the profile row does not exist yet. Missing
-/// assumptions (new catalogue keys after an update) are added on every
-/// launch without touching edited values.
+/// First-launch seed: every assumption of the catalogue, the habits
+/// (discreet aliases) and three meal templates. No personal data: the
+/// profile is entered by the user on the first screen. Habits and templates
+/// are inserted once, when there are none; missing assumptions (new
+/// catalogue keys after an update) are added on every launch without
+/// touching edited values.
 Future<void> seedIfNeeded(UserDb db) async {
   await db.transaction(() async {
-    final existing = await db.select(db.profile).getSingleOrNull();
-    if (existing == null) {
-      await db.into(db.profile).insert(ProfileCompanion.insert(
-            id: const Value(1),
-            name: 'Abraham Fuenmayor',
-            birthYear: 2001,
-            heightCm: 171,
-            sex: Sex.male.code,
-            targetWeightKg: 72,
-          ));
+    final anyHabit = await (db.select(db.habits)..limit(1)).getSingleOrNull();
+    if (anyHabit == null) {
       await db.batch((b) {
         b.insertAll(db.habits, [
           HabitsCompanion.insert(
@@ -92,16 +84,14 @@ Future<void> seedIfNeeded(UserDb db) async {
             source: const Value(HabitSource.sleepHours),
           ),
         ]);
-        b.insertAll(db.mealTemplates, [
-          MealTemplatesCompanion.insert(nameEs: 'Desayuno taller'),
-          MealTemplatesCompanion.insert(nameEs: 'Almuerzo taller'),
-          MealTemplatesCompanion.insert(nameEs: 'Cena'),
-        ]);
-        // Day-1 weigh-in dialog starts at the owner's last known weight; it
-        // is only stored as a weight when the user confirms it.
-        b.insert(
-          db.appSettings,
-          AppSettingsCompanion.insert(key: SettingKey.weightPrefill, value: '65'),
+        b.insertAll(
+          db.mealTemplates,
+          [
+            MealTemplatesCompanion.insert(nameEs: 'Desayuno'),
+            MealTemplatesCompanion.insert(nameEs: 'Almuerzo'),
+            MealTemplatesCompanion.insert(nameEs: 'Cena'),
+          ],
+          mode: InsertMode.insertOrIgnore,
         );
       });
     }

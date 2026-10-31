@@ -18,6 +18,18 @@ UserDb memoryUserDb() => UserDb(
       DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true),
     );
 
+/// Example profile for tests only (the app ships no profile).
+Future<void> insertTestProfile(UserDb db) => db.into(db.profile).insertOnConflictUpdate(
+      ProfileCompanion.insert(
+        id: const Value(1),
+        name: 'Persona de prueba',
+        birthYear: 1990,
+        heightCm: 175,
+        sex: 'male',
+        targetWeightKg: 75,
+      ),
+    );
+
 /// The reference DDL taken from the ETL itself, so the fixture schema can
 /// never drift from the real database.
 String referenceDdl() {

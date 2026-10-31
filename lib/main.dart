@@ -1,17 +1,17 @@
 import 'dart:async';
 
-import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'app/theme.dart';
+import 'data/db_open.dart';
 import 'data/reference_db.dart';
 import 'data/reference_installer.dart';
 import 'data/seed.dart';
-import 'data/user_db.dart';
+import 'data/settings.dart';
 import 'services/notifications.dart';
 import 'services/screen_awake.dart';
 import 'services/services.dart';
@@ -24,10 +24,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
 
-  final db = UserDb(driftDatabase(
-    name: 'user',
-    native: const DriftNativeOptions(databaseDirectory: getApplicationSupportDirectory),
-  ));
+  final OpenedUserDb opened;
+  try {
+    opened = await openUserDb();
+  } on Object catch (e) {
+    runApp(DatabaseErrorApp(message: '$e'));
+    return;
+  }
+  final db = opened.db;
   await seedIfNeeded(db);
 
   ReferenceDb? reference;
@@ -54,6 +58,12 @@ Future<void> main() async {
   runApp(ProviderScope(
     overrides: [
       userDbProvider.overrideWithValue(db),
+      dbSecurityProvider.overrideWithValue(DbSecurityStatus(
+        encrypted: opened.encrypted,
+        encryptedThisLaunch: opened.report.encryptedNow,
+        verifiedTables: opened.report.rowCounts.length,
+        quarantinedPath: opened.report.quarantinedPath,
+      )),
       referenceDbProvider.overrideWithValue(reference),
       referenceStatusProvider.overrideWithValue(status),
       notificationServiceProvider.overrideWithValue(LocalNotificationService()),
@@ -65,4 +75,42 @@ Future<void> main() async {
     ],
     child: const HumanOsApp(),
   ));
+}
+
+/// Shown when the user database cannot be opened. Nothing is deleted: the
+/// file stays on the phone and the message says what happened.
+class DatabaseErrorApp extends StatelessWidget {
+  const DatabaseErrorApp({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: buildTheme(AccentColor.phosphor),
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('NO SE PUDO ABRIR TU BASE DE DATOS', style: TextStyle(fontSize: 22)),
+                const SizedBox(height: 16),
+                Text(message),
+                const SizedBox(height: 16),
+                const Text(
+                  'Tus datos no se borraron. Si reinstalaste la app o borraste sus '
+                  'datos, la clave de cifrado se perdió: restaura tu copia cifrada '
+                  'con contraseña.',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -77,6 +77,32 @@ final crtEnabledProvider = Provider<bool>(
   (ref) => ref.watch(settingsProvider).crtHeaders && !ref.watch(crtGovernorProvider),
 );
 
+/// Encryption state of `user.sqlite`, shown in DIAGNÓSTICO and AJUSTES.
+class DbSecurityStatus {
+  const DbSecurityStatus({
+    required this.encrypted,
+    this.encryptedThisLaunch = false,
+    this.verifiedTables = 0,
+    this.quarantinedPath,
+  });
+
+  /// The file on disk cannot be read without the key.
+  final bool encrypted;
+
+  /// A plain v3.0 database was encrypted during this launch.
+  final bool encryptedThisLaunch;
+
+  /// Tables whose row counts were compared during that encryption.
+  final int verifiedTables;
+
+  /// An encrypted file without its key, moved aside (never deleted).
+  final String? quarantinedPath;
+}
+
+final dbSecurityProvider = Provider<DbSecurityStatus>(
+  (ref) => const DbSecurityStatus(encrypted: false),
+);
+
 /// What happened to the reference database at launch (diagnosis screen).
 class ReferenceStatus {
   const ReferenceStatus({required this.installed, this.updated = false, this.errorEs});
