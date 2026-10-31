@@ -121,7 +121,9 @@ jobs:
                   oid = (f.get('lfs') or {}).get('oid') or ''
                   # Base64 and decimal: the log masks hexadecimal strings.
                   import base64
-                  print(f['path'], f.get('size'), 'sha256-b64', base64.b64encode(bytes.fromhex(oid)).decode(), 'sha256-int', int(oid, 16) if oid else '')
+                  hexpart = oid.split(':')[-1].strip().lower()
+                  print(f['path'], f.get('size'), 'oid-len', len(oid), 'prefix', repr(oid[:7].translate(str.maketrans('0123456789abcdef', 'ghijklmnopqrstuv'))))
+                  print('sha256-b64', base64.b64encode(bytes.fromhex(hexpart)).decode())
           " || true
             curl -fsS "https://huggingface.co/api/models/$repo" | python3 -c "
           import json, sys
