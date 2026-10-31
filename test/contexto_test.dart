@@ -264,11 +264,8 @@ void main() {
     final ref = await pump(tester, const SizedBox.shrink());
 
     await syncEventReminders(ref);
-    final sent = {for (final r in device.eventReminders.last) r.message: (r.trigger, r.zoneIds)};
-    expect(sent, {
-      'Agua': ('llegar', <int>[]),
-      'Ropa': ('salir', [work]),
-    });
+    final sent = {for (final r in device.eventReminders.last) r.message: '${r.trigger} ${r.zoneIds}'};
+    expect(sent, {'Agua': 'llegar []', 'Ropa': 'salir [$work]'});
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
