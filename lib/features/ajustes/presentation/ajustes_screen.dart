@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/chores.dart';
 import '../../../app/providers.dart';
 import '../../../app/widgets/big_button.dart';
+import '../../../app/widgets/clock_picker.dart';
 import '../../../app/widgets/format.dart';
 import '../../../app/widgets/gram_stepper.dart';
 import '../../../app/widgets/hos_page.dart';
@@ -76,17 +77,6 @@ Future<void> _updateProfile(WidgetRef ref, ProfileCompanion fields) {
 class _ProfilePanel extends ConsumerWidget {
   const _ProfilePanel();
 
-  Future<void> _time(BuildContext context, WidgetRef ref, String current,
-      ProfileCompanion Function(String) build) async {
-    final minutes = parseClock(current);
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
-    );
-    if (picked == null) return;
-    await _updateProfile(ref, build(formatClock(picked.hour * 60 + picked.minute)));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(profileProvider).value;
@@ -120,13 +110,8 @@ class _ProfilePanel extends ConsumerWidget {
               await _updateProfile(ref, ProfileCompanion(targetWeightKg: Value(kg)));
             }
           }),
-          editable('Entrada al turno', p.shiftStart,
-              () => _time(context, ref, p.shiftStart, (v) => ProfileCompanion(shiftStart: Value(v)))),
-          editable('Almuerzo', p.lunchStart,
-              () => _time(context, ref, p.lunchStart, (v) => ProfileCompanion(lunchStart: Value(v)))),
-          editable('Salida del turno', p.shiftEnd,
-              () => _time(context, ref, p.shiftEnd, (v) => ProfileCompanion(shiftEnd: Value(v)))),
-          const Note('Toca un dato para cambiarlo. El horario mueve los bloques de comida y los avisos.'),
+          const Note('Toca un dato para cambiarlo. Tus horarios de trabajo viven en TRABAJO → '
+              'plantillas: mueven los bloques de comida y callan los avisos mientras trabajas.'),
         ],
       ),
     );
@@ -199,23 +184,36 @@ class _RemindersPanel extends ConsumerWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('COMIDAS'),
-            subtitle: const Text('A la hora de cada bloque según tu turno.'),
+            subtitle: const Text('A la hora de cada bloque, en los días con trabajo planificado.'),
             value: settings.mealReminders,
             onChanged: (v) => repo.setBool(SettingKey.mealReminders, v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('AGUA EN HORAS DE CALOR'),
-            subtitle: const Text('Se activan desde TURNO para el día.'),
-            value: settings.hydrationNudges,
-            onChanged: (v) => repo.setBool(SettingKey.hydrationNudges, v),
+            title: const Text('TERMO'),
+            subtitle: const Text('Antes de un trabajo con calor y en su pausa. Nunca mientras trabajas.'),
+            value: settings.hydrationReminders,
+            onChanged: (v) => repo.setBool(SettingKey.hydrationReminders, v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('DÍA DE SESIÓN'),
-            subtitle: const Text('Al salir del turno el día en que toca entrenar.'),
+            subtitle: const Text('Al terminar tu trabajo planificado el día en que toca entrenar.'),
             value: settings.sessionReminder,
             onChanged: (v) => repo.setBool(SettingKey.sessionReminder, v),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('CIERRE DEL DÍA'),
+            subtitle: Text(settings.dayCloseTime == null
+                ? 'Apagado. Toca para elegir la hora.'
+                : 'A las ${settings.dayCloseTime}: «¿Registraste tu trabajo y tus comidas?». '
+                    'Mantén presionado para apagarlo.'),
+            onTap: () async {
+              final v = await pickClock(context, initial: settings.dayCloseTime, help: 'Cierre del día');
+              if (v != null) await repo.set(SettingKey.dayCloseTime, v);
+            },
+            onLongPress: () => repo.remove(SettingKey.dayCloseTime),
           ),
           OutlinedButton(
             onPressed: () async {

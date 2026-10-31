@@ -227,7 +227,7 @@ InteractionReport checkInteractions({
         ruleId: 'fibra_cruda_pre_turno',
         severity: WarningSeverity.media,
         messageEs:
-            '${formatDecimal(rawFiber)} g de fibra cruda antes del turno '
+            '${formatDecimal(rawFiber)} g de fibra cruda antes de un trabajo '
             'físico suele dar molestias digestivas. Mejor cocida o en la cena.',
       ),
     );

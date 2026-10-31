@@ -1,11 +1,13 @@
 /// Linear programming (two-phase simplex with Bland's rule) and the day
 /// plan built on it: minimise cost subject to kcal ≥ target, protein ≥
-/// target, sodium ≤ limit (+ sweat sodium), fat ≤ cap and grams ≤ stock.
+/// target, sodium ≤ limit, fat ≤ cap and grams ≤ stock. Prices come in
+/// integer cents per kg and the plan's cost leaves in integer cents.
 /// When infeasible, a diagnostic names the binding constraint.
 library;
 
 import 'assumptions.dart';
 import 'format_es.dart';
+import 'money.dart';
 
 enum ConstraintSense { le, ge, eq }
 
@@ -209,7 +211,7 @@ class DietFood {
     required this.key,
     required this.name,
     required this.maxGrams,
-    this.costUsdPerG,
+    this.priceCentsPerKg,
     this.kcalPerG,
     this.proteinPerG,
     this.sodiumMgPerG,
@@ -222,7 +224,9 @@ class DietFood {
 
   /// Stock in the pantry.
   final double maxGrams;
-  final double? costUsdPerG;
+
+  /// Price per kg in integer cents.
+  final int? priceCentsPerKg;
   final double? kcalPerG;
   final double? proteinPerG;
   final double? sodiumMgPerG;
@@ -242,7 +246,7 @@ class DietTargets {
   final double kcalMin;
   final double proteinMinG;
 
-  /// 2300 mg plus the sodium lost in sweat today.
+  /// The daily sodium limit (an assumption).
   final double sodiumMaxMg;
 }
 
@@ -264,7 +268,7 @@ class DietPlan {
   const DietPlan({
     required this.status,
     required this.gramsByKey,
-    required this.costUsd,
+    required this.costCents,
     required this.kcal,
     required this.proteinG,
     required this.sodiumMg,
@@ -277,7 +281,9 @@ class DietPlan {
 
   final DietStatus status;
   final Map<String, double> gramsByKey;
-  final double costUsd;
+
+  /// Integer cents, rounded once from the optimum.
+  final int costCents;
   final double kcal;
   final double proteinG;
 
@@ -312,7 +318,7 @@ DietPlan planDiet({
       excluded.add('${f.name}: bebida (no llena el plato sola).');
       continue;
     }
-    if (f.costUsdPerG == null) {
+    if (f.priceCentsPerKg == null) {
       excluded.add('${f.name}: sin precio.');
       continue;
     }
@@ -331,7 +337,7 @@ DietPlan planDiet({
     return DietPlan(
       status: DietStatus.nothingNeeded,
       gramsByKey: const {},
-      costUsd: 0,
+      costCents: 0,
       kcal: 0,
       proteinG: 0,
       sodiumMg: 0,
@@ -346,7 +352,7 @@ DietPlan planDiet({
     return DietPlan(
       status: DietStatus.noCandidates,
       gramsByKey: const {},
-      costUsd: 0,
+      costCents: 0,
       kcal: 0,
       proteinG: 0,
       sodiumMg: 0,
@@ -418,7 +424,8 @@ DietPlan planDiet({
       );
     }
     return solveLp(
-      objective: [for (final c in candidates) c.food.costUsdPerG!],
+      // Cents per gram: the simplex itself works in real numbers.
+      objective: [for (final c in candidates) c.food.priceCentsPerKg! / 1000],
       constraints: constraints,
     );
   }
@@ -435,7 +442,7 @@ DietPlan planDiet({
       grams[f.key] = g;
       kcal += f.kcalPerG! * g;
       protein += f.proteinPerG! * g;
-      cost += f.costUsdPerG! * g;
+      cost += f.priceCentsPerKg! / 1000 * g;
       if (f.sodiumMgPerG == null) {
         sodiumPartial = true;
       } else {
@@ -446,7 +453,7 @@ DietPlan planDiet({
     return DietPlan(
       status: DietStatus.optimal,
       gramsByKey: grams,
-      costUsd: cost,
+      costCents: cost.round(),
       kcal: kcal,
       proteinG: protein,
       sodiumMg: sodium,
@@ -455,7 +462,7 @@ DietPlan planDiet({
       excludedEs: excluded,
       bindingEs: const [],
       messageEs:
-          'Plan de ${formatDecimal(cost, decimals: 2)} USD: '
+          'Plan de ${formatCents(cost.round())}: '
           '${formatWhole(kcal)} kcal, ${formatWhole(protein)} g de proteína.',
     );
   }
@@ -507,7 +514,7 @@ DietPlan planDiet({
   return DietPlan(
     status: DietStatus.infeasible,
     gramsByKey: const {},
-    costUsd: 0,
+    costCents: 0,
     kcal: 0,
     proteinG: 0,
     sodiumMg: 0,

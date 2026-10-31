@@ -18,7 +18,7 @@ import '../../../telemetry/confidence.dart';
 import '../../habitos/domain/habits_model.dart';
 import '../../heavy_duty/domain/training_plan.dart';
 import '../../registro/domain/intake.dart';
-import '../../turno/domain/hydration.dart';
+import '../../trabajo/domain/work_model.dart';
 import '../domain/readiness_today.dart';
 import '../domain/targets.dart';
 
@@ -298,12 +298,10 @@ class _TodayPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final today = ref.watch(todayProvider);
-    final log = ref.watch(todayLogProvider);
     final plan = ref.watch(hydrationPlanProvider);
-    final compliance = ref.watch(hydrationComplianceProvider);
+    final acks = ref.watch(thermoAcksTodayProvider);
     final session = ref.watch(sessionPlanProvider);
     final overview = ref.watch(habitsOverviewProvider);
-    final heat = log?.heatHours ?? 0;
     final sessionLine = session.isDue(today)
         ? 'HOY · ${session.template.code} · ${session.mode.labelEs}'
         : '${fmtDay(session.earliestDate)} · ${session.template.code} · ${session.mode.labelEs}';
@@ -313,12 +311,8 @@ class _TodayPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DataLine(
-            'Agua del turno',
-            heat <= 0
-                ? 'declara horas de calor en TURNO'
-                : '${fmtNum(log?.fluidsL, decimals: 1, unit: 'L')} de '
-                    '${fmtNum(plannedLitres(plan), decimals: 1, unit: 'L')}'
-                    '${compliance == null ? '' : ' (${fmtNum(compliance * 100)} %)'}',
+            'Termo de hoy',
+            plan.hasHeat ? '${plan.rangeEs} · llenado $acks de 2' : 'sin calor declarado o planificado',
           ),
           DataLine('Próxima sesión', sessionLine),
           if (overview != null)
@@ -327,7 +321,7 @@ class _TodayPanel extends ConsumerWidget {
               overview.minimumToday.noData
                   ? 'sin registros'
                   : '${overview.minimumToday.done} de ${overview.minimumToday.essentials}'
-                      ' (bastan ${overview.minimumToday.required})',
+                      '${overview.minimumToday.done >= overview.minimumToday.required ? ' (cumplido)' : ' (faltan ${overview.minimumToday.required - overview.minimumToday.done})'}',
             ),
           const SizedBox(height: 6),
           Row(children: [

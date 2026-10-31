@@ -1,9 +1,10 @@
-/// Meal schedule derived from the work shift, and the day's energy target.
+/// Meal schedule framed by the day's work window, and the day's energy
+/// target.
 ///
-/// Blocks (07:00–17:00 shift, 1 h lunch): breakfast before the shift,
-/// mid-morning, lunch, afternoon, post-workout (training days, after the
-/// shift) and dinner. kcal weights come from the assumptions and are
-/// normalised over the blocks of the day.
+/// Blocks around the window and its break: breakfast before work,
+/// mid-morning, lunch (in the break), afternoon, post-workout (training
+/// days, after work) and dinner. kcal weights come from the assumptions
+/// and are normalised over the blocks of the day.
 ///
 /// The energy target keeps v1's three distinct states: a registered workday
 /// scales only the activity part by hours worked; an off day uses the
@@ -17,27 +18,35 @@ import 'day.dart';
 import 'format_es.dart';
 import 'interaction_rules.dart';
 
+/// The work window that frames a day's meals.
 class ShiftConfig {
   const ShiftConfig({
     required this.shiftStartMin,
     required this.shiftEndMin,
     required this.lunchStartMin,
+    this.lunchMinutes,
   });
 
-  /// Builds from `HH:MM` strings as stored in the profile.
+  /// Builds from `HH:MM` strings (a work template's clocks).
   factory ShiftConfig.fromClock({
     required String shiftStart,
     required String shiftEnd,
     required String lunchStart,
+    int? lunchMinutes,
   }) => ShiftConfig(
     shiftStartMin: parseClock(shiftStart),
     shiftEndMin: parseClock(shiftEnd),
     lunchStartMin: parseClock(lunchStart),
+    lunchMinutes: lunchMinutes,
   );
 
   final int shiftStartMin;
   final int shiftEndMin;
   final int lunchStartMin;
+
+  /// Length of the work's own break; null falls back to the lunch-duration
+  /// assumption.
+  final int? lunchMinutes;
 
   /// Shift length in hours (wrapping past midnight).
   double get hours {
@@ -106,7 +115,8 @@ List<MealSlot> mealSchedule({
   required bool workday,
   required ScheduleParams params,
 }) {
-  final lunchEnd = shift.lunchStartMin + params.lunchDurationMin;
+  final lunchEnd =
+      shift.lunchStartMin + (shift.lunchMinutes ?? params.lunchDurationMin);
   final postWorkout = shift.shiftEndMin + params.postworkoutAfterShiftMin;
   final dinner = trainingDay
       ? postWorkout + params.dinnerAfterPostworkoutMin
@@ -115,22 +125,22 @@ List<MealSlot> mealSchedule({
     (
       MealBlock.breakfast,
       shift.shiftStartMin - params.breakfastBeforeShiftMin,
-      workday ? 'Antes del turno' : 'Día libre — horario base',
+      workday ? 'Antes del trabajo' : 'Día libre — horario base',
     ),
     (
       MealBlock.midMorning,
       (shift.shiftStartMin + shift.lunchStartMin) ~/ 2,
-      workday ? 'Durante el turno de la mañana' : 'Día libre',
+      workday ? 'Durante el trabajo, antes de la pausa' : 'Día libre',
     ),
     (
       MealBlock.lunch,
       shift.lunchStartMin,
-      workday ? 'Receso de almuerzo' : 'Día libre',
+      workday ? 'En la pausa' : 'Día libre',
     ),
     (
       MealBlock.afternoon,
       (lunchEnd + shift.shiftEndMin) ~/ 2,
-      workday ? 'Durante el turno de la tarde' : 'Día libre',
+      workday ? 'Durante el trabajo, después de la pausa' : 'Día libre',
     ),
     if (trainingDay)
       (MealBlock.postWorkout, postWorkout, 'Después de entrenar'),
@@ -194,8 +204,8 @@ DayEnergy dailyEnergyTarget({
         adjustmentKcal: 0,
         confidence: Confidence.baja,
         noteEs:
-            'Sin jornada registrada hoy: objetivo provisional de día de '
-            'trabajo. Marca el esfuerzo del turno para ajustarlo.',
+            'Sin trabajo registrado hoy: objetivo provisional de día de '
+            'trabajo. Registra tu trabajo en TRABAJO para ajustarlo.',
       );
     case DayType.offDay:
       final value = bmr * palOffday + surplusKcal;
@@ -205,7 +215,7 @@ DayEnergy dailyEnergyTarget({
         adjustmentKcal: (value - full).round(),
         confidence: Confidence.media,
         noteEs:
-            'Día libre: sin turno, pero un día libre no es reposo '
+            'Día libre: sin trabajo, pero un día libre no es reposo '
             'absoluto. Si entrenas fuerte, come más que esto.',
       );
     case DayType.workday:
@@ -220,7 +230,7 @@ DayEnergy dailyEnergyTarget({
         confidence: Confidence.alta,
         hoursWorked: hours,
         noteEs:
-            '${formatDecimal(hours)} h de turno frente a '
+            '${formatDecimal(hours)} h de trabajo frente a '
             '${formatWhole(referenceHours)} h de referencia. Solo se ajusta la '
             'parte de actividad; el gasto basal no cambia.',
       );

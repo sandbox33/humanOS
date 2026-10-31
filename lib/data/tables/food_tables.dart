@@ -8,7 +8,8 @@ class Purchases extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get date => text()();
   TextColumn get store => text().nullable()();
-  RealColumn get totalUsd => real().nullable()();
+  /// Receipt total in integer cents.
+  IntColumn get totalCents => integer().nullable()();
   TextColumn get rawText => text().nullable()();
 }
 
@@ -19,7 +20,8 @@ class PantryItems extends Table {
   TextColumn get barcode => text().nullable()();
   RealColumn get gramsRemaining =>
       real().check(gramsRemaining.isBiggerOrEqualValue(0))();
-  RealColumn get priceUsdPerKg => real().nullable()();
+  /// Price in integer cents per kilogram (optional).
+  IntColumn get priceCentsPerKg => integer().nullable().check(priceCentsPerKg.isBiggerOrEqualValue(0))();
   TextColumn get purchasedOn => text().nullable()();
   TextColumn get expiresOn => text().nullable()();
   IntColumn get purchaseId => integer().nullable().references(Purchases, #id)();

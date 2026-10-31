@@ -13,6 +13,8 @@ import '../../../data/user_db.dart';
 import '../../estado/domain/targets.dart';
 import '../../heavy_duty/domain/training_plan.dart';
 import '../../indice/presentation/catalog_search.dart';
+import '../../trabajo/data/work_repository.dart';
+import '../../trabajo/domain/work_model.dart';
 import '../domain/intake.dart';
 import 'add_item_sheet.dart';
 
@@ -20,9 +22,10 @@ final mealTemplatesProvider = StreamProvider<List<MealTemplateRow>>(
   (ref) => ref.watch(mealsRepositoryProvider).watchTemplates(),
 );
 
-/// Meal slots of a day from the shift and the training plan.
+/// Meal slots of a day around its first planned work window (from the
+/// user's templates). Without planned work there are no suggested times:
+/// the blocks are shown without a clock.
 List<MealSlot> slotsFor(WidgetRef ref, DateTime date) {
-  final profile = ref.watch(profileProvider).value;
   final a = ref.watch(currentAssumptionsProvider);
   final today = ref.watch(todayProvider);
   final iso = isoDate(date);
@@ -31,11 +34,8 @@ List<MealSlot> slotsFor(WidgetRef ref, DateTime date) {
   final sessions = ref.watch(sessionsProvider).value ?? const <SessionRow>[];
   final trained = sessions.any((s) => s.date == iso) ||
       (date == today && ref.watch(sessionPlanProvider).isDue(today));
-  final shift = ShiftConfig.fromClock(
-    shiftStart: profile?.shiftStart ?? '07:00',
-    shiftEnd: profile?.shiftEnd ?? '17:00',
-    lunchStart: profile?.lunchStart ?? '12:00',
-  );
+  final shift = shiftOfDay(ref, date);
+  if (shift == null) return const [];
   return mealSchedule(
     shift: shift,
     trainingDay: trained,
@@ -43,6 +43,22 @@ List<MealSlot> slotsFor(WidgetRef ref, DateTime date) {
     params: ScheduleParams.fromAssumptions(a),
   );
 }
+
+/// The day's first planned work window as a meal-schedule frame, or null.
+ShiftConfig? shiftOfDay(WidgetRef ref, DateTime date) {
+  final day = DateTime(date.year, date.month, date.day);
+  final schedules = [for (final t in ref.watch(activeTemplatesProvider)) scheduleOf(t)];
+  return mealFrameFor(day, plannedWindows(day, schedules));
+}
+
+/// Blocks shown on a day without planned work (no suggested times).
+const untimedBlocks = [
+  MealBlock.breakfast,
+  MealBlock.midMorning,
+  MealBlock.lunch,
+  MealBlock.afternoon,
+  MealBlock.dinner,
+];
 
 /// REGISTRO: what was eaten, by meal block, with day totals, interaction
 /// warnings (never blocking), templates and "repetir ayer".
@@ -66,7 +82,9 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
     final scheduled = {for (final s in slots) s.block};
     final extra = [
       for (final b in MealBlock.values)
-        if (!scheduled.contains(b) && (intake?.inBlock(b).isNotEmpty ?? false)) b,
+        if (!scheduled.contains(b) &&
+            ((slots.isEmpty && untimedBlocks.contains(b)) || (intake?.inBlock(b).isNotEmpty ?? false)))
+          b,
     ];
     return HosPage(
       title: 'REGISTRO',

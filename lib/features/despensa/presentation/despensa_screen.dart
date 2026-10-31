@@ -74,16 +74,17 @@ class _StockSheet extends ConsumerStatefulWidget {
 
 class _StockSheetState extends ConsumerState<_StockSheet> {
   late double _grams = widget.row?.gramsRemaining ?? 1000;
-  double? _pricePaid;
-  late double? _pricePerKg = widget.row?.priceUsdPerKg;
+  int? _paidCents;
+  late int? _perKgCents = widget.row?.priceCentsPerKg;
   late DateTime? _expires =
       widget.row?.expiresOn == null ? null : DateTime.tryParse(widget.row!.expiresOn!);
 
   Future<void> _save() async {
     final repo = ref.read(pantryRepositoryProvider);
     final today = isoDate(ref.read(todayProvider));
-    final paid = _pricePaid;
-    final perKg = paid != null && _grams > 0 ? paid / _grams * 1000 : _pricePerKg;
+    final paid = _paidCents;
+    final grams = _grams.round();
+    final perKg = paid != null && grams > 0 ? divRound(paid * 1000, grams) : _perKgCents;
     final expires = _expires == null ? null : isoDate(_expires!);
     final row = widget.row;
     if (row == null) {
@@ -92,13 +93,18 @@ class _StockSheetState extends ConsumerState<_StockSheet> {
         foodId: choice.foodId,
         barcode: choice.foodId == null ? choice.barcode : null,
         grams: _grams,
-        priceUsdPerKg: perKg,
+        priceCentsPerKg: perKg,
         purchasedOn: today,
         expiresOn: expires,
         purchaseId: widget.purchaseId,
       );
     } else {
-      await repo.updateItem(row, grams: _grams, price: perKg, expiresOn: expires);
+      await repo.updateItem(
+        row,
+        grams: _grams,
+        priceCentsPerKg: perKg,
+        expiresOn: expires,
+      );
     }
     if (mounted) Navigator.of(context).pop();
   }
@@ -132,16 +138,16 @@ class _StockSheetState extends ConsumerState<_StockSheet> {
             ),
             DataLine(
               'Precio',
-              _pricePaid != null
-                  ? '${fmtUsd(_pricePaid)} pagados'
-                  : (_pricePerKg == null ? sinDato : '${fmtUsd(_pricePerKg)} / kg'),
+              _paidCents != null
+                  ? '${formatCents(_paidCents!)} pagados'
+                  : (_perKgCents == null ? sinDato : '${formatCents(_perKgCents!)} / kg'),
             ),
             Row(children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () async {
-                    final v = await askNumber(context, title: 'Precio pagado', unit: 'USD', decimals: 2);
-                    if (v != null && v >= 0) setState(() => _pricePaid = v);
+                    final v = await askCents(context, title: 'Precio pagado', initial: _paidCents);
+                    if (v != null) setState(() => _paidCents = v);
                   },
                   child: const Text('PAGADO'),
                 ),
@@ -150,11 +156,11 @@ class _StockSheetState extends ConsumerState<_StockSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () async {
-                    final v = await askNumber(context, title: 'Precio por kg', initial: _pricePerKg, unit: 'USD/kg', decimals: 2);
-                    if (v != null && v >= 0) {
+                    final v = await askCents(context, title: 'Precio por kg', initial: _perKgCents, unit: 'USD/kg');
+                    if (v != null) {
                       setState(() {
-                        _pricePerKg = v;
-                        _pricePaid = null;
+                        _perKgCents = v;
+                        _paidCents = null;
                       });
                     }
                   },
@@ -246,7 +252,7 @@ class _StockTab extends ConsumerWidget {
                   child: DataLine(
                     s.food.name,
                     '${fmtNum(s.row.gramsRemaining, unit: 'g')}'
-                    '${s.row.priceUsdPerKg == null ? '' : ' · ${fmtUsd(s.row.priceUsdPerKg)}/kg'}'
+                    '${s.row.priceCentsPerKg == null ? '' : ' · ${formatCents(s.row.priceCentsPerKg!)}/kg'}'
                     '${s.daysToExpiry == null ? '' : (s.daysToExpiry! < 0 ? ' · VENCIDO' : ' · ${s.daysToExpiry} d')}',
                   ),
                 ),
@@ -276,7 +282,7 @@ class _PurchasesTab extends ConsumerWidget {
   Future<void> _newPurchase(BuildContext context, WidgetRef ref) async {
     final store = await askText(context, title: 'Tienda', hint: 'Mercado, supermercado…');
     if (store == null || !context.mounted) return;
-    final total = await askNumber(context, title: 'Total pagado', unit: 'USD', decimals: 2);
+    final total = await askCents(context, title: 'Total pagado');
     if (!context.mounted) return;
     String? text;
     final scan = await confirm(
@@ -290,7 +296,7 @@ class _PurchasesTab extends ConsumerWidget {
     final id = await ref.read(pantryRepositoryProvider).addPurchase(
           date: isoDate(ref.read(todayProvider)),
           store: store.isEmpty ? null : store,
-          totalUsd: total,
+          totalCents: total,
           rawText: text,
         );
     if (!context.mounted) return;
@@ -322,7 +328,7 @@ class _PurchasesTab extends ConsumerWidget {
           Card(
             child: ListTile(
               title: Text('${fmtDay(parseIsoDate(p.date))} · ${p.store ?? 'sin tienda'}'),
-              subtitle: Text(p.totalUsd == null ? 'total: $sinDato' : 'total: ${fmtUsd(p.totalUsd)}'),
+              subtitle: Text(p.totalCents == null ? 'total: $sinDato' : 'total: ${formatCents(p.totalCents!)}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => _PurchasePage(purchaseId: p.id),
@@ -365,7 +371,11 @@ class _PurchasePage extends ConsumerWidget {
             children: [
               if (stock.isEmpty) const Note('Añade lo que compraste, con gramos y precio.'),
               for (final s in stock)
-                DataLine(s.food.name, '${fmtNum(s.row.gramsRemaining, unit: 'g')} · ${fmtUsd(s.row.priceUsdPerKg)}/kg'),
+                DataLine(
+                  s.food.name,
+                  '${fmtNum(s.row.gramsRemaining, unit: 'g')} · '
+                  '${s.row.priceCentsPerKg == null ? sinDato : formatCents(s.row.priceCentsPerKg!)}/kg',
+                ),
               const SizedBox(height: 8),
               BigButton(
                 label: 'Añadir producto',
@@ -564,7 +574,7 @@ class _PlanTabState extends ConsumerState<_PlanTab> {
                   DataLine(stock[entry.key]?.food.name ?? entry.key, fmtNum(entry.value, unit: 'g')),
               if (plan.status == DietStatus.optimal) ...[
                 const Divider(),
-                DataLine('Costo', fmtUsd(plan.costUsd), emphasis: true),
+                DataLine('Costo', formatCents(plan.costCents), emphasis: true),
                 DataLine('Energía', fmtNum(plan.kcal, unit: 'kcal')),
                 DataLine('Proteína', fmtNum(plan.proteinG, unit: 'g')),
                 DataLine('Sodio', '${plan.sodiumPartial ? '≥ ' : ''}${fmtNum(plan.sodiumMg, unit: 'mg')}'),

@@ -26,9 +26,9 @@ void main() {
   });
 
   test('clock parsing and formatting', () {
-    expect(parseClock('07:00'), 420);
-    expect(parseClock('17:30'), 1050);
-    expect(formatClock(420 - 45), '06:15');
+    expect(parseClock('06:45'), 405);
+    expect(parseClock('16:45'), 1005);
+    expect(formatClock(405 - 30), '06:15');
     expect(formatClock(1440 + 30), '00:30');
     expect(() => parseClock('25:00'), throwsFormatException);
   });

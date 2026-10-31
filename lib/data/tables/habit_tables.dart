@@ -42,8 +42,13 @@ class StreakState extends Table {
 @DataClassName('AttributeRow')
 class Attributes extends Table {
   TextColumn get date => text()();
-  TextColumn get attr => text().check(attr.isIn(
-      const ['FUERZA', 'RESISTENCIA', 'RECUPERACION', 'DISCIPLINA']))();
+  TextColumn get attr => text().check(attr.isIn(const [
+        'FUERZA',
+        'RESISTENCIA',
+        'NUTRICION',
+        'RECUPERACION',
+        'DISCIPLINA',
+      ]))();
   RealColumn get value => real()();
 
   @override

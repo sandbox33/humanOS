@@ -56,15 +56,15 @@ void main() {
   const open = DietParams(maxEnergyShare: 1.0, fatMaxFrac: 1.0);
 
   test('two-food diet with a known optimum', () {
-    // A: 4 kcal/g, no protein, 0.002 USD/g. B: 1.5 kcal/g, 0.25 g/g,
-    // 0.006 USD/g. Need 2400 kcal and 120 g protein → B = 480 g, A = 420 g.
+    // A: 4 kcal/g, no protein, 200 cents/kg. B: 1.5 kcal/g, 0.25 g/g,
+    // 600 cents/kg. Need 2400 kcal and 120 g protein → B = 480 g, A = 420 g.
     final plan = planDiet(
       foods: const [
         DietFood(
           key: 'A',
           name: 'A',
           maxGrams: 10000,
-          costUsdPerG: 0.002,
+          priceCentsPerKg: 200,
           kcalPerG: 4,
           proteinPerG: 0,
           sodiumMgPerG: 0,
@@ -73,7 +73,7 @@ void main() {
           key: 'B',
           name: 'B',
           maxGrams: 10000,
-          costUsdPerG: 0.006,
+          priceCentsPerKg: 600,
           kcalPerG: 1.5,
           proteinPerG: 0.25,
           sodiumMgPerG: 0,
@@ -89,7 +89,8 @@ void main() {
     expect(plan.status, DietStatus.optimal);
     expect(plan.gramsByKey['A'], closeTo(420, 1e-6));
     expect(plan.gramsByKey['B'], closeTo(480, 1e-6));
-    expect(plan.costUsd, closeTo(3.72, 1e-6));
+    expect(plan.costCents, 372);
+    expect(plan.messageEs, startsWith('Plan de 3,72 USD'));
   });
 
   test('sodium limit binds and is named', () {
@@ -99,7 +100,7 @@ void main() {
           key: 'salty',
           name: 'Embutido',
           maxGrams: 2000,
-          costUsdPerG: 0.001,
+          priceCentsPerKg: 100,
           kcalPerG: 3,
           proteinPerG: 0.2,
           sodiumMgPerG: 10,
@@ -123,7 +124,7 @@ void main() {
           key: 'rice',
           name: 'Arroz',
           maxGrams: 5000,
-          costUsdPerG: 0.001,
+          priceCentsPerKg: 100,
           kcalPerG: 3.6,
           proteinPerG: 0.07,
           sodiumMgPerG: 0,
@@ -147,7 +148,7 @@ void main() {
           key: 'soda',
           name: 'Gaseosa',
           maxGrams: 2000,
-          costUsdPerG: 0.0005,
+          priceCentsPerKg: 50,
           kcalPerG: 0.4,
           proteinPerG: 0,
           isBeverage: true,
@@ -178,7 +179,7 @@ void main() {
           key: 'oil',
           name: 'Aceite',
           maxGrams: 1000,
-          costUsdPerG: 0.002,
+          priceCentsPerKg: 200,
           kcalPerG: 8.8,
           proteinPerG: 0,
           sodiumMgPerG: 0,
@@ -188,7 +189,7 @@ void main() {
           key: 'rice',
           name: 'Arroz',
           maxGrams: 2000,
-          costUsdPerG: 0.0015,
+          priceCentsPerKg: 150,
           kcalPerG: 3.6,
           proteinPerG: 0.07,
           sodiumMgPerG: 0.05,
@@ -198,7 +199,7 @@ void main() {
           key: 'beans',
           name: 'Caraotas',
           maxGrams: 2000,
-          costUsdPerG: 0.003,
+          priceCentsPerKg: 300,
           kcalPerG: 3.4,
           proteinPerG: 0.21,
           sodiumMgPerG: 0.05,
@@ -208,7 +209,7 @@ void main() {
           key: 'eggs',
           name: 'Huevos',
           maxGrams: 1000,
-          costUsdPerG: 0.004,
+          priceCentsPerKg: 400,
           kcalPerG: 1.4,
           proteinPerG: 0.125,
           sodiumMgPerG: 1.4,
@@ -243,7 +244,7 @@ void main() {
           key: 'x',
           name: 'X',
           maxGrams: 2000,
-          costUsdPerG: 0.001,
+          priceCentsPerKg: 100,
           kcalPerG: 3,
           proteinPerG: 0.2,
         ),

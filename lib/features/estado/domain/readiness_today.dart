@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humanos_core/humanos_core.dart';
 
@@ -47,6 +47,13 @@ final recoveryHistoryProvider = Provider<List<DailyRecovery>>((ref) {
         workEffort: effort[d],
       ),
   ];
+});
+
+/// Stored readiness of the last 60 days (bands for RECUPERACIÓN).
+final readinessHistoryProvider = StreamProvider<List<ReadinessRow>>((ref) {
+  final db = ref.watch(userDbProvider);
+  final from = isoDate(addDays(ref.watch(todayProvider), -60));
+  return (db.select(db.readiness)..where((t) => t.date.isBiggerOrEqualValue(from))).watch();
 });
 
 final readinessTodayProvider = Provider<ReadinessResult>((ref) {
