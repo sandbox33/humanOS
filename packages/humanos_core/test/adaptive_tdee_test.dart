@@ -145,16 +145,16 @@ void main() {
     });
   });
 
-  test('Mifflin bootstrap for the real profile', () {
-    final age = ageFromBirthYear(2001, DateTime.utc(2026, 10, 12));
-    expect(age, 25);
+  test('Mifflin bootstrap for an invented profile', () {
+    final age = ageFromBirthYear(1994, DateTime.utc(2026, 10, 12));
+    expect(age, 32);
     final bmr = mifflinBmr(
-      weightKg: 65,
-      heightCm: 171,
+      weightKg: 70,
+      heightCm: 168,
       ageYears: age,
       sex: Sex.male,
     );
-    expect(bmr, closeTo(10 * 65 + 6.25 * 171 - 5 * 25 + 5, 1e-9));
+    expect(bmr, closeTo(10 * 70 + 6.25 * 168 - 5 * 32 + 5, 1e-9));
     expect(
       bootstrapTargetKcal(bmr: bmr, workday: true, params: params),
       closeTo(bmr * 1.9 + 300, 1e-9),

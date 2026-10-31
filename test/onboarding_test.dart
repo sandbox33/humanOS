@@ -44,7 +44,7 @@ void main() {
     await type('Año de nacimiento', '1995');
     await type('Estatura', '170');
     await type('Peso de hoy', '68,5');
-    await type('Peso meta', '72');
+    await type('Peso meta', '74');
     await tester.ensureVisible(find.text('GUARDAR Y ENTRAR'));
     await tester.tap(find.text('GUARDAR Y ENTRAR'));
     await tester.pump();

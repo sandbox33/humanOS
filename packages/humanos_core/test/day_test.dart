@@ -15,9 +15,9 @@ void main() {
   });
 
   test('isoDate round-trips through parseIsoDate', () {
-    final d = DateTime.utc(2001, 1, 5);
-    expect(isoDate(d), '2001-01-05');
-    expect(parseIsoDate('2001-01-05'), d);
+    final d = DateTime.utc(1999, 3, 7);
+    expect(isoDate(d), '1999-03-07');
+    expect(parseIsoDate('1999-03-07'), d);
   });
 
   test('parseIsoDate rejects bad and impossible dates', () {
