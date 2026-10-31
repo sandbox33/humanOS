@@ -57,6 +57,12 @@ void main() {
   Future<void> setting(String key, String value) =>
       db.into(db.appSettings).insertOnConflictUpdate(AppSettingsCompanion.insert(key: key, value: value));
 
+  /// A focused text field blinks its cursor forever: settle without focus.
+  Future<void> unfocus(WidgetTester tester) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+  }
+
   /// Pumps [screen] and returns a ref that keeps the given providers loaded.
   Future<WidgetRef> pump(WidgetTester tester, Widget screen) async {
     tester.view.physicalSize = const Size(1080, 2400);
@@ -119,6 +125,7 @@ void main() {
     await tester.tap(find.text('NUEVA ZONA'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'Nombre neutro'), 'Zona A');
+    await unfocus(tester);
     await tester.tap(find.text('USAR MI UBICACIÓN ACTUAL'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('GUARDAR'));
@@ -145,6 +152,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'Nombre neutro'), 'Zona extra');
     await tester.enterText(find.widgetWithText(TextField, 'O escribe o pega «latitud, longitud»'), '20.5, -30.25');
+    await unfocus(tester);
     await tester.ensureVisible(find.text('GUARDAR'));
     await tester.tap(find.text('GUARDAR'));
     await tester.pump();
@@ -214,6 +222,7 @@ void main() {
     await tester.tap(find.text('LLEGUÉ'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, '¿Qué vas a hacer? (opcional)'), 'Leer');
+    await unfocus(tester);
     await tester.tap(find.widgetWithText(ChoiceChip, '4').last);
     await tester.pump();
     await tester.ensureVisible(find.text('GUARDAR'));

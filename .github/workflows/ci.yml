@@ -85,7 +85,8 @@ jobs:
             diff -u "drift_schemas/$(basename "$f")" "$f"
           done
       - run: flutter analyze
-      - run: flutter test
+      # Every test by name, and none may hang the job.
+      - run: flutter test --reporter expanded --timeout 90s
 
   android:
     name: APK de prueba (firma de depuración)
