@@ -672,7 +672,7 @@ Future<void> offerIncomeSplit(BuildContext context, WidgetRef ref, int incomeCen
   final percent = int.tryParse(await settings.get(FinanceKey.splitPercent) ?? '');
   if (percent == null) return;
   final repo = ref.read(financeRepositoryProvider);
-  final goals = [for (final r in await repo.watchGoals().first) goalFromRow(r)];
+  final goals = [for (final r in await repo.goals()) goalFromRow(r)];
   final advice = splitIncomeAdvice(incomeCents: incomeCents, percent: percent, goals: goals);
   if (advice == null || !context.mounted) return;
   final ok = await confirm(context, title: 'Separar para tu meta', message: advice.textEs, accept: 'SEPARAR');

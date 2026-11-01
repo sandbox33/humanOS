@@ -84,6 +84,9 @@ class FinanceRepository {
 
   // --------------------------------------------------------------- goals
 
+  Future<List<GoalRow>> goals() =>
+      (_db.select(_db.goals)..orderBy([(t) => OrderingTerm.asc(t.priority), (t) => OrderingTerm.asc(t.id)])).get();
+
   Stream<List<GoalRow>> watchGoals() =>
       (_db.select(_db.goals)..orderBy([(t) => OrderingTerm.asc(t.priority), (t) => OrderingTerm.asc(t.id)])).watch();
 
