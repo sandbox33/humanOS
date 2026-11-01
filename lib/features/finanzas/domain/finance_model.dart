@@ -71,15 +71,13 @@ class FinanceSettings {
       splitPercent: int.tryParse(map[FinanceKey.splitPercent] ?? ''),
       emergencyGoalId: int.tryParse(map[FinanceKey.emergencyGoalId] ?? ''),
       dismissed: {
-        for (final code in (map[FinanceKey.dismissedRules] ?? '').split(','))
-          if (AdviceRule.parse(code) case final rule?) rule,
+        for (final code in (map[FinanceKey.dismissedRules] ?? '').split(',')) ?AdviceRule.parse(code),
       },
       adviceDay: parts == null || parts.length != 2 ? null : parts[0],
       adviceRules: parts == null || parts.length != 2
           ? const []
           : [
-              for (final code in parts[1].split(','))
-                if (AdviceRule.parse(code) case final rule?) rule,
+              for (final code in parts[1].split(',')) ?AdviceRule.parse(code),
             ],
     );
   }
