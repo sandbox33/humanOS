@@ -15,6 +15,7 @@ import '../features/despensa/presentation/despensa_screen.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
 import '../features/estado/presentation/estado_screen.dart';
+import '../features/finanzas/presentation/finanzas_screen.dart';
 import '../features/habitos/domain/habits_model.dart';
 import '../features/habitos/presentation/habitos_screen.dart';
 import '../features/heavy_duty/domain/training_plan.dart';
@@ -266,6 +267,7 @@ class MasScreen extends StatelessWidget {
         tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
             () => const ContextoScreen()),
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
+        tile('FINANZAS', 'Gastos, metas y consejos pequeños', Icons.savings_outlined, () => const FinanzasScreen()),
         tile('ASISTENTE', 'Una frase → un registro que confirmas', Icons.auto_fix_high, () => const AsistenteScreen()),
         tile('AJUSTES', 'Perfil, supuestos, datos de salud y copias', Icons.settings_outlined,
             () => const AjustesScreen()),

@@ -2,6 +2,8 @@
 library;
 
 export 'src/adaptive_tdee.dart';
+export 'src/advisor/finance.dart';
+export 'src/advisor/rules.dart';
 export 'src/alarms.dart';
 export 'src/assistant_eval.dart';
 export 'src/assumptions.dart';
