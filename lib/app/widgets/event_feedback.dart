@@ -23,7 +23,7 @@ abstract final class EventFeedback {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              color: Colors.black,
+              color: Theme.of(context).scaffoldBackgroundColor,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
                 message.toUpperCase(),

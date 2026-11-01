@@ -62,10 +62,12 @@ class _HumanOsAppState extends ConsumerState<HumanOsApp> {
   @override
   Widget build(BuildContext context) {
     final accent = ref.watch(settingsProvider.select((s) => s.accent));
+    // The settings stream rebuilds MaterialApp: the theme changes live.
+    final theme = ref.watch(settingsProvider.select((s) => s.theme));
     return MaterialApp(
       title: 'HumanOS',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(accent),
+      theme: buildTheme(accent, theme: theme),
       locale: const Locale('es', 'EC'),
       supportedLocales: const [Locale('es', 'EC'), Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
