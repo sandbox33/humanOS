@@ -62,12 +62,12 @@ void main() {
   testWidgets('the rules understand a weight and nothing is saved before confirming', (tester) async {
     await open(tester);
     await say(tester, 'peso 70,4');
-    expect(find.text('Resultado · Peso'), findsOneWidget);
+    expect(find.text('> RESULTADO · PESO'), findsOneWidget);
     expect(find.text('70,4 kg'), findsOneWidget);
     expect(await db.select(db.bodyMetrics).get(), isEmpty);
 
-    await tester.ensureVisible(find.text('REVISAR Y GUARDAR'));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('REVISAR Y GUARDAR'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pump();
     await tester.tap(find.text('REVISAR Y GUARDAR'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('GUARDAR'));
@@ -90,7 +90,7 @@ void main() {
 
     await say(tester, 'metí 250 g de yuca en el almuerzo');
     expect(model.prompts, hasLength(1));
-    expect(find.text('Resultado · Comida'), findsOneWidget);
+    expect(find.text('> RESULTADO · COMIDA'), findsOneWidget);
     expect(find.text('yuca'), findsOneWidget);
     expect(find.text('250 g'), findsOneWidget);
 
@@ -110,8 +110,12 @@ void main() {
 
   testWidgets('the evaluation runs the shipped phrases and is kept', (tester) async {
     await open(tester);
-    await tester.ensureVisible(find.text('EVALUAR (FRASES DE PRUEBA)'));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('EVALUAR (FRASES DE PRUEBA)'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     await tester.tap(find.text('EVALUAR (FRASES DE PRUEBA)'));
     // The phrases come from the app's assets (real file access).
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 500)));
