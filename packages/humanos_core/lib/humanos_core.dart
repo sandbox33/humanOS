@@ -26,6 +26,7 @@ export 'src/meal_plan.dart';
 export 'src/money.dart';
 export 'src/notification_policy.dart';
 export 'src/pantry_scorer.dart';
+export 'src/pay.dart';
 export 'src/readiness.dart';
 export 'src/receipt_parser.dart';
 export 'src/rep_tempo.dart';
