@@ -13,6 +13,7 @@ import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/nutrients.dart';
 import '../../../services/services.dart';
 import '../../estado/domain/targets.dart';
+import '../../filtro/domain/dns_model.dart';
 import '../../finanzas/domain/finance_model.dart';
 import '../../registro/domain/intake.dart';
 import '../domain/schedule_model.dart';
@@ -179,6 +180,7 @@ class _DayNumbers extends ConsumerWidget {
                 '${status == null ? '' : ' / ${fmtNum(status.macros.proteinPlanG, unit: 'g')}'}',
           ),
           DataLine('Gastado hoy', formatCents(spent)),
+          DataLine('Filtro DNS', ref.watch(filterStatusProvider)?.status.labelEs ?? 'sin comprobar'),
           if (goal != null && progress != null) ...[
             DataLine(goal.title, '${formatCents(progress.savedCents)} de ${formatCents(progress.targetCents!)}'),
             LinearProgressIndicator(
@@ -212,7 +214,7 @@ class PinnedApps extends ConsumerWidget {
             ),
             for (final app in pinned)
               OutlinedButton.icon(
-                onPressed: () => launcher.launch(app.package),
+                onPressed: () => openApp(context, ref, app),
                 icon: AppIcon(app.package, size: 24),
                 label: Text(app.label.toUpperCase()),
               ),
