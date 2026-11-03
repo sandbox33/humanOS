@@ -112,10 +112,12 @@ void main() {
     expect(await SettingsRepository(db).get(LauncherKey.pinned), 'test.mensajes');
 
     await tester.tap(find.text('Mapas Prueba'));
+    await tester.pump(const Duration(milliseconds: 50));
     expect(launcher.launched, ['test.mapas']);
     await tester.tap(find.byTooltip('Volver'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('MENSAJES PRUEBA'));
+    await tester.pump(const Duration(milliseconds: 50));
     expect(launcher.launched.last, 'test.mensajes');
     await tester.pumpWidget(const SizedBox.shrink());
   });

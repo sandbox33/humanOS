@@ -123,6 +123,7 @@ void main() {
     await open(tester, DateTime(2026, 11, 3, 19), const AppsPage());
     expect(find.text('Juego Prueba'), findsOneWidget);
     await tester.tap(find.text('Juego Prueba'));
+    await tester.pump(const Duration(milliseconds: 50));
     expect(launcher.launched, ['test.juego'], reason: 'leisure opens straight away');
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -131,14 +132,17 @@ void main() {
     await SettingsRepository(db).setBool(ScreenKey.frictionSocial, true);
     await open(tester, DateTime(2026, 11, 3, 19), const AppsPage());
     await tester.tap(find.text('Red Prueba'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Se abre en 10 s.'), findsOneWidget);
     await tester.tap(find.text('NO ABRIR'));
     await tester.pumpAndSettle();
     expect(launcher.launched, isEmpty);
 
     await tester.tap(find.text('Red Prueba'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Se abre en 10 s.'), findsOneWidget);
     await tester.pump(const Duration(seconds: 9));
     expect(launcher.launched, isEmpty);
     await tester.pump(const Duration(seconds: 1));

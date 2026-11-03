@@ -39,8 +39,17 @@ final visibleAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
 /// Opens [app]; a social app waits [socialFrictionSeconds] first when the
 /// user turned that pause on.
 Future<void> openApp(BuildContext context, WidgetRef ref, InstalledApp app) async {
-  final category = ref.read(effectiveClassesProvider)[app.package];
-  if (category == AppCategory.redes && ref.read(socialFrictionProvider)) {
+  // Read from the source, not from a provider that may still be loading.
+  final friction = await ref.read(settingsRepositoryProvider).get(ScreenKey.frictionSocial) == '1';
+  if (!context.mounted) return;
+  var category = AppCategory.sinClasificar;
+  if (friction) {
+    final stored = await ref.read(appClassesProvider.future);
+    final declared = await ref.read(declaredCategoriesProvider.future);
+    category = stored[app.package] ?? suggestCategory(declared[app.package]);
+    if (!context.mounted) return;
+  }
+  if (category == AppCategory.redes) {
     final go = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
