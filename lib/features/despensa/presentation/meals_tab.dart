@@ -48,6 +48,7 @@ class MealsTab extends ConsumerWidget {
                 DataLine('Falta', '${fmtNum(p.kcal, unit: 'kcal')} · ${fmtNum(p.proteinG, unit: 'g')} de proteína'),
                 for (final e in p.grams.entries) DataLine(stock[e.key]?.food.name ?? e.key, fmtNum(e.value, unit: 'g')),
                 if (p.plan != null && p.plan!.status != DietStatus.optimal) Note(p.plan!.messageEs),
+                if (p.varietyNoteEs != null) Note(p.varietyNoteEs!),
                 if (p.plan != null && p.plan!.excludedEs.isNotEmpty)
                   Note('No usados: ${p.plan!.excludedEs.join('; ')}. Pon el precio al registrar la compra.'),
                 if (p.slot.block == MealBlock.midMorning || p.slot.block == MealBlock.afternoon)
