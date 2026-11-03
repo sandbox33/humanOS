@@ -17,6 +17,8 @@ import '../../despensa/domain/pantry_model.dart';
 import '../../estado/domain/targets.dart';
 import '../../filtro/domain/dns_model.dart';
 import '../../finanzas/domain/finance_model.dart';
+import '../../finanzas/domain/pay_model.dart';
+import '../../finanzas/presentation/pay_panels.dart';
 import '../../registro/domain/intake.dart';
 import '../domain/schedule_model.dart';
 import 'apps_page.dart';
@@ -183,13 +185,27 @@ class _DayNumbers extends ConsumerWidget {
                 '${status == null ? '' : ' / ${fmtNum(status.macros.proteinPlanG, unit: 'g')}'}',
           ),
           DataLine('Gastado hoy', formatCents(spent)),
+          if (ref.watch(cashViewProvider) case final cash when cash.cashCents != null)
+            DataLine(
+              'Efectivo',
+              '${formatCents(cash.cashCents!)}${cash.days == null ? '' : ' · te alcanza ${cash.days} días'}',
+            ),
           DataLine('Filtro DNS', ref.watch(filterStatusProvider)?.status.labelEs ?? 'sin comprobar'),
           if (goal != null && progress != null) ...[
             DataLine(goal.title, '${formatCents(progress.savedCents)} de ${formatCents(progress.targetCents!)}'),
+            if (goalEtaWeeks(goal, goals, ref.watch(averageSurplusProvider)) case final weeks?)
+              Text(weeks == 0 ? 'Meta cubierta.' : 'Al ritmo actual: unas $weeks semanas.',
+                  style: Theme.of(context).textTheme.bodySmall),
             LinearProgressIndicator(
               value: progress.targetCents == 0 ? 1 : (progress.savedCents / progress.targetCents!).clamp(0, 1).toDouble(),
             ),
           ],
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => QuickExpenseSheet.show(context),
+            icon: const Icon(Icons.remove_circle_outline),
+            label: const Text('GASTÉ'),
+          ),
         ],
       ),
     );

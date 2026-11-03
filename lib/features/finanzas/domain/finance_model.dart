@@ -6,6 +6,7 @@ import '../../../data/user_db.dart';
 import '../../contexto/domain/context_model.dart';
 import '../../trabajo/domain/work_model.dart';
 import '../data/finance_repository.dart';
+import 'pay_model.dart';
 
 /// Finance settings (all user data; no default threshold or percentage).
 abstract final class FinanceKey {
@@ -94,12 +95,33 @@ final financeSettingsProvider = Provider<FinanceSettings>(
   (ref) => FinanceSettings.fromMap(ref.watch(settingsMapProvider).value ?? const {}),
 );
 
+/// Income for the advisor (B5): the pay the user wrote down and, for weeks
+/// without a recorded pay, the money of the work entries (never both).
+final incomeProvider = Provider<List<MoneyIn>>((ref) {
+  final pay = ref.watch(payWeeksProvider);
+  final paidWeeks = {for (final p in pay) weekStart(p.paidOn)};
+  return [
+    for (final p in pay) p.asIncome,
+    for (final m in MoneyIn.fromWork(ref.watch(workEntriesProvider)))
+      if (!paidWeeks.contains(weekStart(m.date))) m,
+  ];
+});
+
+/// Average weekly surplus of the last weeks (for goal ETAs).
+final averageSurplusProvider = Provider<int>(
+  (ref) => averageSurplusCents(weeklyFlows(
+    income: ref.watch(incomeProvider),
+    expenses: ref.watch(expensesProvider),
+    today: ref.watch(todayProvider),
+  )),
+);
+
 /// Every rule that applies today, from the user's own data.
 final adviceCandidatesProvider = Provider<List<Advice>>((ref) {
   final today = ref.watch(todayProvider);
   final settings = ref.watch(financeSettingsProvider);
   return adviceCandidates(
-    income: MoneyIn.fromWork(ref.watch(workEntriesProvider)),
+    income: ref.watch(incomeProvider),
     expenses: ref.watch(expensesProvider),
     goals: ref.watch(goalsProvider),
     monthTotals: ref.watch(workSummaryProvider).month,

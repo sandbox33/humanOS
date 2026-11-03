@@ -14,6 +14,8 @@ import '../../../data/user_db.dart';
 import '../../trabajo/domain/work_model.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_model.dart';
+import '../domain/pay_model.dart';
+import 'pay_panels.dart';
 
 final _money = [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))];
 
@@ -30,6 +32,8 @@ class FinanzasScreen extends ConsumerWidget {
           Note(advisorDisclaimerEs, icon: Icons.info_outline),
           _AdvicePanel(),
           _WeekPanel(),
+          CashPanel(),
+          PayPanel(),
           _PausesPanel(),
           _GoalsPanel(),
           _ExpensesPanel(),
@@ -102,19 +106,20 @@ class _WeekPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final flows = weeklyFlows(
-      income: MoneyIn.fromWork(ref.watch(workEntriesProvider)),
+      income: ref.watch(incomeProvider),
       expenses: ref.watch(expensesProvider),
       today: ref.watch(todayProvider),
     );
     final week = flows.last;
     final rate = week.savingsRate;
-    final perHour = ref.watch(workSummaryProvider).month.centsPerHour;
+    // B5: the real value from recorded pay, else the work entries of the month.
+    final perHour = ref.watch(hourValuesProvider).averageCentsPerHour ?? ref.watch(workSummaryProvider).month.centsPerHour;
     return TerminalPanel(
       label: 'Esta semana',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DataLine('Ingresos (trabajo con monto)', formatCents(week.incomeCents)),
+          DataLine('Ingresos (pagos registrados o trabajo con monto)', formatCents(week.incomeCents)),
           DataLine('Gastos', formatCents(week.expenseCents)),
           DataLine('Excedente', formatCents(week.surplusCents), emphasis: true),
           DataLine('Tasa de ahorro', rate == null ? 'sin dato' : '${formatDecimal(rate * 100, decimals: 1)} %'),
@@ -179,7 +184,7 @@ class _GoalsPanel extends ConsumerWidget {
     final goals = ref.watch(goalsProvider);
     final settings = ref.watch(financeSettingsProvider);
     final flows = weeklyFlows(
-      income: MoneyIn.fromWork(ref.watch(workEntriesProvider)),
+      income: ref.watch(incomeProvider),
       expenses: ref.watch(expensesProvider),
       today: ref.watch(todayProvider),
     );

@@ -197,6 +197,8 @@ abstract final class A {
   static const blockMinFlexibleMin = 'block_min_flexible_min';
   static const mealBlockMin = 'meal_block_min';
   static const shoppingCoverDays = 'shopping_cover_days';
+  static const spendPaceDays = 'spend_pace_days';
+  static const payWeeksForRate = 'pay_weeks_for_rate';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1713,6 +1715,32 @@ const List<AssumptionDef> assumptionCatalog = [
     explainEs:
         'La lista de compra calcula lo que comiste por día en la última semana, '
         'lo multiplica por estos días y resta lo que hay en la despensa.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.spendPaceDays,
+    value: 14,
+    min: 3,
+    max: 60,
+    unitEs: 'días',
+    group: AssumptionGroup.finanzas,
+    titleEs: 'Días para tu ritmo de gasto',
+    explainEs:
+        'El gasto por día es el promedio de estos últimos días (sin contar hoy). '
+        'Con él se calcula para cuántos días te alcanza el efectivo.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.payWeeksForRate,
+    value: 8,
+    min: 1,
+    max: 52,
+    unitEs: 'pagos',
+    group: AssumptionGroup.finanzas,
+    titleEs: 'Pagos para el valor de tu hora',
+    explainEs:
+        'Cuántos de tus últimos pagos se usan para calcular el valor real de la hora '
+        'normal y de la hora extra.',
     source: _model,
   ),
 ];
