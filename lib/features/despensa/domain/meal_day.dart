@@ -79,7 +79,14 @@ final scheduleMealSlotsProvider = Provider.family<List<MealSlot>, int>((ref, off
 
 /// The plan of one meal slot.
 class SlotPlan {
-  const SlotPlan({required this.slot, required this.kcal, required this.proteinG, this.plan, this.noteEs});
+  const SlotPlan({
+    required this.slot,
+    required this.kcal,
+    required this.proteinG,
+    this.plan,
+    this.noteEs,
+    this.varietyNoteEs,
+  });
 
   final MealSlot slot;
 
@@ -88,6 +95,9 @@ class SlotPlan {
   final double proteinG;
   final DietPlan? plan;
   final String? noteEs;
+
+  /// Said when the meal was planned without the day's variety cap.
+  final String? varietyNoteEs;
 
   Map<String, double> get grams => {
         for (final e in plan?.gramsByKey.entries ?? const <MapEntry<String, double>>[])
@@ -134,17 +144,30 @@ final mealDayPlanProvider = Provider<List<SlotPlan>>((ref) {
             ))
           _limited(dietFoodOf(s), left[s.key]!),
     ];
-    final plan = planDiet(
-      foods: foods,
-      targets: DietTargets(kcalMin: kcal, proteinMinG: protein, sodiumMaxMg: a[A.sodiumLimitMg] * slot.kcalShare),
-      params: params,
-    );
+    final targets = DietTargets(kcalMin: kcal, proteinMinG: protein, sodiumMaxMg: a[A.sodiumLimitMg] * slot.kcalShare);
+    var plan = planDiet(foods: foods, targets: targets, params: params);
+    String? note;
+    // A single meal often has two or three foods: when the variety cap
+    // (meant for the whole day) leaves no plan, the meal is planned
+    // without it and says so.
+    if (plan.status == DietStatus.infeasible) {
+      final uncapped = planDiet(
+        foods: foods,
+        targets: targets,
+        params: DietParams(maxEnergyShare: 1, fatMaxFrac: params.fatMaxFrac),
+      );
+      if (uncapped.status == DietStatus.optimal) {
+        plan = uncapped;
+        note = 'Con pocos alimentos para esta comida, uno puede dar más del '
+            '${(params.maxEnergyShare * 100).round()} % de sus kcal.';
+      }
+    }
     if (plan.status == DietStatus.optimal) {
       for (final e in plan.gramsByKey.entries) {
         left[e.key] = (left[e.key] ?? 0) - e.value;
       }
     }
-    out.add(SlotPlan(slot: slot, kcal: kcal, proteinG: protein, plan: plan));
+    out.add(SlotPlan(slot: slot, kcal: kcal, proteinG: protein, plan: plan, varietyNoteEs: note));
   }
   return out;
 });
