@@ -286,7 +286,10 @@ class MealNowPanel extends ConsumerWidget {
           if (p.noteEs != null)
             Note(p.noteEs!)
           else if (p.grams.isEmpty)
-            Note(p.plan?.messageEs ?? 'La despensa no alcanza para esta comida.')
+            Note([
+              p.plan?.messageEs ?? 'La despensa no alcanza para esta comida.',
+              if (p.plan?.excludedEs.isNotEmpty ?? false) 'No usados: ${p.plan!.excludedEs.join('; ')}.',
+            ].join(' '))
           else ...[
             for (final e in p.grams.entries) DataLine(stock[e.key]?.food.name ?? e.key, fmtNum(e.value, unit: 'g')),
             const SizedBox(height: 8),
