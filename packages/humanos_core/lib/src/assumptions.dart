@@ -194,6 +194,8 @@ abstract final class A {
   static const emergencyFundWeeks = 'emergency_fund_weeks';
   static const purchasePauseH = 'purchase_pause_h';
   static const maxAdvicePerDay = 'max_advice_per_day';
+  static const blockMinFlexibleMin = 'block_min_flexible_min';
+  static const mealBlockMin = 'meal_block_min';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1672,6 +1674,31 @@ const List<AssumptionDef> assumptionCatalog = [
     titleEs: 'Consejos por día',
     explainEs:
         'Máximo de consejos de dinero que se muestran en un día. Ninguno en CHAMBA ni ENTRENO.',
+    source: _model,
+  ),
+  // ------------------------------------------------------- HORARIO DEL DÍA
+  AssumptionDef(
+    key: A.blockMinFlexibleMin,
+    value: 15,
+    min: 5,
+    max: 120,
+    unitEs: 'min',
+    group: AssumptionGroup.horario,
+    titleEs: 'Bloque mínimo que vale la pena',
+    explainEs:
+        'Si al mover el día quedan menos minutos que esto para un bloque flexible '
+        '(proyecto, ocio, entreno…), pasa al día siguiente en lugar de acortarse.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.mealBlockMin,
+    value: 30,
+    min: 5,
+    max: 120,
+    unitEs: 'min',
+    group: AssumptionGroup.horario,
+    titleEs: 'Duración de una comida',
+    explainEs: 'Lo que dura un bloque de comida cuando no le pusiste duración.',
     source: _model,
   ),
 ];

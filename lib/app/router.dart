@@ -21,6 +21,8 @@ import '../features/habitos/presentation/habitos_screen.dart';
 import '../features/heavy_duty/domain/training_plan.dart';
 import '../features/heavy_duty/presentation/heavy_duty_screen.dart';
 import '../features/indice/presentation/indice_screen.dart';
+import '../features/inicio/domain/schedule_model.dart';
+import '../features/inicio/presentation/inicio_screen.dart';
 import '../features/registro/presentation/registro_screen.dart';
 import '../features/trabajo/domain/work_model.dart';
 import '../features/trabajo/presentation/trabajo_screen.dart';
@@ -41,7 +43,17 @@ class ShellTab extends Notifier<int> {
 
 final shellTabProvider = NotifierProvider<ShellTab, int>(ShellTab.new);
 
-/// Bottom navigation (ESTADO · REGISTRO · HEAVY · TRABAJO · MÁS) and the
+/// Bottom tabs, by index.
+abstract final class Tabs {
+  static const inicio = 0;
+  static const estado = 1;
+  static const registro = 2;
+  static const heavy = 3;
+  static const trabajo = 4;
+  static const mas = 5;
+}
+
+/// Bottom navigation (INICIO · ESTADO · REGISTRO · HEAVY · TRABAJO · MÁS) and the
 /// background chores: Health Connect and screen-time reads, automatic
 /// habit values, streak/attribute history and reminders.
 class AppShell extends ConsumerStatefulWidget {
@@ -54,6 +66,7 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
   Timer? _habitDebounce;
   StreamSubscription<void>? _contextChanges;
+  StreamSubscription<void>? _homePresses;
   bool _started = false;
 
   @override
@@ -62,6 +75,12 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _startup());
     _contextChanges = ref.read(deviceContextProvider).changes.listen((_) => unawaited(_readTransitions()));
+    // As the home screen, the home button always comes back to INICIO.
+    _homePresses = ref.read(launcherProvider).homePressed.listen((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      ref.read(shellTabProvider.notifier).select(Tabs.inicio);
+    });
   }
 
   @override
@@ -69,6 +88,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     WidgetsBinding.instance.removeObserver(this);
     _habitDebounce?.cancel();
     unawaited(_contextChanges?.cancel());
+    unawaited(_homePresses?.cancel());
     super.dispose();
   }
 
@@ -78,6 +98,8 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       ref.read(todayProvider.notifier).refresh();
       unawaited(_refreshExternal());
       unawaited(_readTransitions());
+      // A new day drops yesterday's one-day alarm changes.
+      unawaited(_syncNative(alarms: true));
     }
   }
 
@@ -212,11 +234,25 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     ref.listen(alarmRowsProvider, (previous, next) {
       if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
     });
+    ref.listen(blockRowsProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
+    });
+    ref.listen(adjustmentsProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
+    });
     final index = ref.watch(shellTabProvider);
-    return Scaffold(
+    final isHome = ref.watch(defaultHomeProvider).value ?? false;
+    // Back goes to INICIO; on INICIO, as the home screen, it stays.
+    return PopScope(
+      canPop: index == Tabs.inicio && !isHome,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && index != Tabs.inicio) ref.read(shellTabProvider.notifier).select(Tabs.inicio);
+      },
+      child: Scaffold(
       body: IndexedStack(
         index: index,
         children: const [
+          InicioScreen(),
           EstadoScreen(),
           RegistroScreen(),
           HeavyDutyScreen(),
@@ -228,6 +264,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
         selectedIndex: index,
         onDestinationSelected: (i) => ref.read(shellTabProvider.notifier).select(i),
         destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'INICIO'),
           NavigationDestination(icon: Icon(Icons.monitor_heart_outlined), label: 'ESTADO'),
           NavigationDestination(icon: Icon(Icons.restaurant_outlined), label: 'REGISTRO'),
           NavigationDestination(icon: Icon(Icons.fitness_center), label: 'HEAVY'),
@@ -235,9 +272,13 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
           NavigationDestination(icon: Icon(Icons.more_horiz), label: 'MÁS'),
         ],
       ),
+    ),
     );
   }
 }
+
+/// Whether HumanOS is the phone's home screen (read on each start).
+final defaultHomeProvider = FutureProvider<bool>((ref) => ref.watch(launcherProvider).isDefaultHome());
 
 /// MÁS: the screens that are not used every shift.
 class MasScreen extends StatelessWidget {

@@ -22,7 +22,7 @@ void main() {
 
   tearDown(() => db.close());
 
-  testWidgets('the app opens on ESTADO with the Spanish bottom navigation', (tester) async {
+  testWidgets('the app opens on INICIO with the Spanish bottom navigation', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         retry: (_, _) => null,
@@ -37,9 +37,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    for (final label in ['ESTADO', 'REGISTRO', 'HEAVY', 'TRABAJO', 'MÁS']) {
+    for (final label in ['INICIO', 'ESTADO', 'REGISTRO', 'HEAVY', 'TRABAJO', 'MÁS']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
+    // The app opens on INICIO (the home screen) with nothing preset.
+    expect(find.text('ARMAR MI HORARIO'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.monitor_heart_outlined));
+    await tester.pumpAndSettle();
     expect(find.text('PESARME'), findsWidgets);
     expect(find.textContaining('Registra tu peso'), findsOneWidget);
 

@@ -4,11 +4,13 @@ import 'migrations/v1_to_v2.dart';
 import 'migrations/v2_to_v3.dart';
 import 'migrations/v3_to_v4.dart';
 import 'migrations/v4_to_v5.dart';
+import 'migrations/v5_to_v6.dart';
 import 'tables/context_tables.dart';
 import 'tables/finance_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
 import 'tables/profile_tables.dart';
+import 'tables/schedule_tables.dart';
 import 'tables/training_tables.dart';
 import 'tables/work_tables.dart';
 
@@ -63,13 +65,16 @@ part 'user_db.g.dart';
   ExpenseCategories,
   Goals,
   PurchasePauses,
+  // Schema v6
+  ScheduleBlocks,
+  ScheduleAdjustments,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 5;
+  static const currentSchema = 6;
 
   @override
   int get schemaVersion => currentSchema;
@@ -88,6 +93,8 @@ class UserDb extends _$UserDb {
                 await migrateV3ToV4(m, this);
               case 4:
                 await migrateV4ToV5(m, this);
+              case 5:
+                await migrateV5ToV6(m, this);
             }
           }
         },
@@ -133,5 +140,7 @@ class UserDb extends _$UserDb {
         expenses,
         goals,
         purchasePauses,
+        scheduleBlocks,
+        scheduleAdjustments,
       ];
 }

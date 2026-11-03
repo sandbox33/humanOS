@@ -72,7 +72,8 @@ humanOS/
 │  │                           work, money, notification_policy, context_mode,
 │  │                           alarms, text_es, log_parser, assistant_eval,
 │  │                           assumptions, confidence, day, format_es,
-│                           advisor/ (finance, rules: Fase 5, no LLM)
+│                           advisor/ (finance, rules: Fase 5, no LLM),
+│                           day_schedule (B1: template + one-day changes)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -84,7 +85,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        alarmas|asistente|finanzas|habitos|ajustes>/
+│        inicio|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -131,6 +132,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `zones`, `context_events`, `mode_corrections`, `state_checkins`, `event_reminders` (schema 3) | new tables | location context: zones are user data; only ENTER/EXIT with a timestamp, no position history |
 | user `morning_alarms` (schema 3) | new table | morning alarms rung by the phone |
 | user `expenses`, `expense_categories`, `goals`, `purchase_pauses` (schema 5) | new tables | finance advisor: cents only, user categories, goals with sub-goals (`parent_id`), the wait before an unplanned purchase |
+| user `schedule_blocks`, `schedule_adjustments` (schema 6) | new tables | B1: the weekly day template (user blocks, weekdays, alarm) and one-date changes (skip, move, end later, add) |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -177,6 +179,18 @@ size pinned in `model_manager.dart` and the SHA-256 published by the source
 match. `assets/eval/asistente_es.json` (invented phrases) ships with the app
 because the brief requires measuring accuracy and latency on the phone; the
 model is on by default only at or above the accuracy assumption.
+
+HumanOS can be the phone's home screen (B1): `MainActivity` also answers
+`MAIN` + `HOME` + `DEFAULT`, and `LauncherChannel.kt`
+(`com.altair.humanos/launcher`) lists and opens apps, gives the system's
+own dialer and opens Ajustes → Apps predeterminadas. The way out never
+depends on HumanOS working: holding the clock on INICIO for 5 s opens that
+settings page, a screen that fails to build is replaced by a plain app list
+(`ErrorWidget.builder` → `SafeAppList`), and the system launcher is never
+disabled. Pinned apps are the user's choice (`launcher_pinned`); no package
+name is hard-coded. Blocks marked with an alarm ring through the same
+native alarm list as the morning alarms (template weekdays, plus today's
+moved or added blocks), rebuilt on every start, resume and change.
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
