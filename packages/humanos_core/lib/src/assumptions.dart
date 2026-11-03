@@ -22,7 +22,8 @@ enum AssumptionGroup {
   atributos('ATRIBUTOS'),
   avisos('AVISOS'),
   contexto('CONTEXTO'),
-  asistente('ASISTENTE');
+  asistente('ASISTENTE'),
+  finanzas('FINANZAS');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -190,6 +191,9 @@ abstract final class A {
   static const llmTimeoutS = 'llm_timeout_s';
   static const llmIdleS = 'llm_idle_s';
   static const llmMaxTokens = 'llm_max_tokens';
+  static const emergencyFundWeeks = 'emergency_fund_weeks';
+  static const purchasePauseH = 'purchase_pause_h';
+  static const maxAdvicePerDay = 'max_advice_per_day';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1629,6 +1633,45 @@ const List<AssumptionDef> assumptionCatalog = [
     titleEs: 'Contexto del modelo',
     explainEs:
         'Tamaño de la frase y la respuesta que el modelo procesa a la vez.',
+    source: _model,
+  ),
+  // ----------------------------------------------------------- FINANZAS
+  AssumptionDef(
+    key: A.emergencyFundWeeks,
+    value: 12,
+    min: 1,
+    max: 52,
+    unitEs: 'semanas',
+    group: AssumptionGroup.finanzas,
+    titleEs: 'Fondo de emergencia',
+    explainEs:
+        'Semanas de gasto básico (gastos planificados) que se sugiere reservar '
+        'antes de metas no esenciales. Es una sugerencia: la cambias o la descartas.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.purchasePauseH,
+    value: 24,
+    min: 1,
+    max: 168,
+    unitEs: 'h',
+    group: AssumptionGroup.finanzas,
+    titleEs: 'Espera antes de una compra no planificada',
+    explainEs:
+        'Horas de espera sugeridas para una compra no planificada que llega al '
+        'umbral que tú defines en FINANZAS. Sin umbral, no hay espera.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.maxAdvicePerDay,
+    value: 2,
+    min: 0,
+    max: 5,
+    unitEs: 'consejos',
+    group: AssumptionGroup.finanzas,
+    titleEs: 'Consejos por día',
+    explainEs:
+        'Máximo de consejos de dinero que se muestran en un día. Ninguno en CHAMBA ni ENTRENO.',
     source: _model,
   ),
 ];

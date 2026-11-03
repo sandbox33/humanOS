@@ -71,7 +71,8 @@ humanOS/
 │  │                           interaction_rules, cooked_food_safety, schedule,
 │  │                           work, money, notification_policy, context_mode,
 │  │                           alarms, text_es, log_parser, assistant_eval,
-│  │                           assumptions, confidence, day, format_es
+│  │                           assumptions, confidence, day, format_es,
+│                           advisor/ (finance, rules: Fase 5, no LLM)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -83,7 +84,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        alarmas|asistente|habitos|ajustes>/
+│        alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -129,6 +130,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `purchases.total_cents`, `pantry_items.price_cents_per_kg` (schema 2) | integer cents | no `double` for money |
 | user `zones`, `context_events`, `mode_corrections`, `state_checkins`, `event_reminders` (schema 3) | new tables | location context: zones are user data; only ENTER/EXIT with a timestamp, no position history |
 | user `morning_alarms` (schema 3) | new table | morning alarms rung by the phone |
+| user `expenses`, `expense_categories`, `goals`, `purchase_pauses` (schema 5) | new tables | finance advisor: cents only, user categories, goals with sub-goals (`parent_id`), the wait before an unplanned purchase |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -208,6 +210,13 @@ are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
   AES-GCM encrypted export.
 
 ## Modelling rules
+
+* The finance advisor (`humanos_core/lib/src/advisor/`) is rules and
+  templates only: every piece of advice shows its numbers and its rule, can
+  be dismissed, at most `max_advice_per_day` a day and none in CHAMBA or
+  ENTRENO. The fixed notice "Información general, no es asesoría financiera
+  personalizada." is always on screen. No trading, no investment advice, no
+  hard-coded bank rates or prices; the LLM never writes advice.
 
 * Every model constant lives in `packages/humanos_core/lib/src/assumptions.dart`
   (`assumptionCatalog`) with value, Spanish title, explanation and source;

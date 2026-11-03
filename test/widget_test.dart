@@ -45,8 +45,11 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    final list = find.ancestor(of: find.text('DESPENSA'), matching: find.byType(Scrollable)).first;
-    for (final label in ['DESPENSA', 'ÍNDICE', 'HÁBITOS', 'ASISTENTE', 'AJUSTES']) {
+    // Resolve the MÁS list once: a finder relative to DESPENSA would go
+    // stale as soon as DESPENSA scrolls out of view.
+    final listElement = tester.element(find.ancestor(of: find.text('DESPENSA'), matching: find.byType(Scrollable)).first);
+    final list = find.byElementPredicate((e) => e == listElement);
+    for (final label in ['DESPENSA', 'ÍNDICE', 'HÁBITOS', 'FINANZAS', 'ASISTENTE', 'AJUSTES']) {
       await tester.scrollUntilVisible(find.text(label), 120, scrollable: list);
       expect(find.text(label), findsOneWidget, reason: label);
     }

@@ -10,6 +10,7 @@ import '../../../app/widgets/gram_stepper.dart';
 import '../../../app/widgets/hos_page.dart';
 import '../../../data/user_db.dart';
 import '../data/work_repository.dart';
+import '../../finanzas/presentation/finanzas_screen.dart' show offerIncomeSplit;
 import '../domain/work_model.dart';
 
 /// How the hours are entered in the quick form.
@@ -167,6 +168,8 @@ class _WorkEntrySheetState extends ConsumerState<WorkEntrySheet> {
     final repo = ref.read(workRepositoryProvider);
     if (existing == null) {
       await repo.addEntry(adjusted, templateId: widget.template?.id, now: now);
+      final earned = adjusted.earnedCents;
+      if (earned != null && earned > 0 && mounted) await offerIncomeSplit(context, ref, earned);
     } else {
       await repo.replaceEntry(existing.id, adjusted);
     }

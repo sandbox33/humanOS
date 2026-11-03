@@ -3,7 +3,9 @@ import 'package:drift/drift.dart';
 import 'migrations/v1_to_v2.dart';
 import 'migrations/v2_to_v3.dart';
 import 'migrations/v3_to_v4.dart';
+import 'migrations/v4_to_v5.dart';
 import 'tables/context_tables.dart';
+import 'tables/finance_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
 import 'tables/profile_tables.dart';
@@ -56,13 +58,18 @@ part 'user_db.g.dart';
   StateCheckins,
   EventReminders,
   MorningAlarms,
+  // Schema v5
+  Expenses,
+  ExpenseCategories,
+  Goals,
+  PurchasePauses,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 4;
+  static const currentSchema = 5;
 
   @override
   int get schemaVersion => currentSchema;
@@ -79,6 +86,8 @@ class UserDb extends _$UserDb {
                 await migrateV2ToV3(m, this);
               case 3:
                 await migrateV3ToV4(m, this);
+              case 4:
+                await migrateV4ToV5(m, this);
             }
           }
         },
@@ -120,5 +129,9 @@ class UserDb extends _$UserDb {
         stateCheckins,
         eventReminders,
         morningAlarms,
+        expenseCategories,
+        expenses,
+        goals,
+        purchasePauses,
       ];
 }
