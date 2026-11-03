@@ -46,6 +46,8 @@ void main() {
           gramsRemaining: 1000,
           foodId: Value(foodId),
           barcode: Value(barcode),
+          // The plan uses only priced food (it looks for the cheapest).
+          priceCentsPerKg: const Value(300),
           purchasedOn: Value(purchasedOn),
         ),
       );
