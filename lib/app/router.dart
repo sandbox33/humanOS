@@ -23,6 +23,8 @@ import '../features/heavy_duty/presentation/heavy_duty_screen.dart';
 import '../features/indice/presentation/indice_screen.dart';
 import '../features/inicio/domain/schedule_model.dart';
 import '../features/inicio/presentation/inicio_screen.dart';
+import '../features/pantalla/domain/screen_model.dart';
+import '../features/pantalla/presentation/pantalla_screen.dart';
 import '../features/registro/presentation/registro_screen.dart';
 import '../features/trabajo/domain/work_model.dart';
 import '../features/trabajo/presentation/trabajo_screen.dart';
@@ -159,6 +161,12 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     if (granted) await syncHealth(ref);
     if (!mounted) return;
     await syncScreenTime(ref);
+    if (!mounted) return;
+    try {
+      await syncAppUsage(ref);
+    } on Object {
+      // No usage permission or channel: the screen-time view says so.
+    }
     if (mounted) await recordReadiness(ref);
   }
 
@@ -308,6 +316,7 @@ class MasScreen extends StatelessWidget {
         tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
             () => const ContextoScreen()),
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
+        tile('PANTALLA', 'Tiempo por app, categoría y bloque', Icons.phone_android, () => const PantallaScreen()),
         tile('FINANZAS', 'Gastos, metas y consejos pequeños', Icons.savings_outlined, () => const FinanzasScreen()),
         tile('ASISTENTE', 'Una frase → un registro que confirmas', Icons.auto_fix_high, () => const AsistenteScreen()),
         tile('AJUSTES', 'Perfil, supuestos, datos de salud y copias', Icons.settings_outlined,

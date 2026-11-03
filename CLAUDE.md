@@ -73,7 +73,8 @@ humanOS/
 │  │                           alarms, text_es, log_parser, assistant_eval,
 │  │                           assumptions, confidence, day, format_es,
 │                           advisor/ (finance, rules: Fase 5, no LLM),
-│                           day_schedule (B1: template + one-day changes)
+│                           day_schedule (B1: template + one-day changes),
+│                           screen_time (B2: usage events → minutes, hiding)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -85,7 +86,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        inicio|alarmas|asistente|finanzas|habitos|ajustes>/
+│        inicio|pantalla|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -133,6 +134,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `morning_alarms` (schema 3) | new table | morning alarms rung by the phone |
 | user `expenses`, `expense_categories`, `goals`, `purchase_pauses` (schema 5) | new tables | finance advisor: cents only, user categories, goals with sub-goals (`parent_id`), the wait before an unplanned purchase |
 | user `schedule_blocks`, `schedule_adjustments` (schema 6) | new tables | B1: the weekly day template (user blocks, weekdays, alarm) and one-date changes (skip, move, end later, add) |
+| user `app_classes`, `app_usage_days` (schema 7) | new tables | B2: the user's category per app and minutes per app per day (the phone keeps its usage events only some days) |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -191,6 +193,16 @@ disabled. Pinned apps are the user's choice (`launcher_pinned`); no package
 name is hard-coded. Blocks marked with an alarm ring through the same
 native alarm list as the morning alarms (template weekdays, plus today's
 moved or added blocks), rebuilt on every start, resume and change.
+
+Screen time (B2) pairs the phone's resume/pause usage events per app
+(`usage_stats` channel, `events`), splits them at midnight and by schedule
+block, and stores minutes per app per day in the encrypted database; usage
+data never leaves the phone. The first category of an app is a suggestion
+from the category it declares to Android; the user's choice wins. Apps of
+the categories the user hides disappear from INICIO only during the blocks
+they mark; leisure outside those blocks opens directly, and the 10 s pause
+before social apps is optional and off by default. Per-site detail inside
+Chrome is not available to third-party apps (said on screen).
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,

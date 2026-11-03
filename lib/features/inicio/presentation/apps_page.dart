@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humanos_core/humanos_core.dart';
@@ -6,6 +8,7 @@ import '../../../app/providers.dart';
 import '../../../app/widgets/hos_page.dart';
 import '../../../services/launcher.dart';
 import '../../../services/services.dart';
+import '../../pantalla/domain/screen_model.dart';
 import '../domain/schedule_model.dart';
 
 /// Every launchable app on the phone (read again when the page opens).
@@ -20,11 +23,96 @@ final pinnedPackagesProvider = Provider<List<String>>((ref) {
   ];
 });
 
+/// Apps of a category the user hides in the current block are left out of
+/// the home screen.
+final visibleAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
+  final apps = await ref.watch(installedAppsProvider.future);
+  final hidden = ref.watch(hiddenNowProvider);
+  if (hidden.isEmpty) return apps;
+  final classes = ref.watch(effectiveClassesProvider);
+  return [
+    for (final a in apps)
+      if (!hidden.contains(classes[a.package] ?? AppCategory.sinClasificar)) a,
+  ];
+});
+
+/// Opens [app]; a social app waits [socialFrictionSeconds] first when the
+/// user turned that pause on.
+Future<void> openApp(BuildContext context, WidgetRef ref, InstalledApp app) async {
+  // Read from the source, not from a provider that may still be loading.
+  final friction = await ref.read(settingsRepositoryProvider).get(ScreenKey.frictionSocial) == '1';
+  if (!context.mounted) return;
+  var category = AppCategory.sinClasificar;
+  if (friction) {
+    // Straight from the database and the phone: a provider nobody listens
+    // to may be paused and never answer.
+    final stored = await ref.read(screenRepositoryProvider).classes();
+    var declared = const <String, int>{};
+    try {
+      declared = await ref.read(screenTimeProvider)?.appCategories() ?? const {};
+    } on Object {
+      // No suggestion: the user's own class decides.
+    }
+    category = stored[app.package] ?? suggestCategory(declared[app.package]);
+    if (!context.mounted) return;
+  }
+  if (category == AppCategory.redes) {
+    final go = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _FrictionDialog(label: app.label),
+    );
+    if (go != true) return;
+  }
+  await ref.read(launcherProvider).launch(app.package);
+}
+
+class _FrictionDialog extends StatefulWidget {
+  const _FrictionDialog({required this.label});
+  final String label;
+
+  @override
+  State<_FrictionDialog> createState() => _FrictionDialogState();
+}
+
+class _FrictionDialogState extends State<_FrictionDialog> {
+  int _left = socialFrictionSeconds;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_left <= 1) {
+        t.cancel();
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() => _left--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.label.toUpperCase()),
+        content: Text('Se abre en $_left s.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('NO ABRIR')),
+        ],
+      );
+}
+
 /// Pinned apps that are still installed.
 final pinnedAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
   final packages = ref.watch(pinnedPackagesProvider);
   if (packages.isEmpty) return const [];
-  final apps = {for (final a in await ref.watch(installedAppsProvider.future)) a.package: a};
+  final apps = {for (final a in await ref.watch(visibleAppsProvider.future)) a.package: a};
   return [
     for (final p in packages) ?apps[p],
   ];
@@ -100,12 +188,15 @@ class _AppsPageState extends ConsumerState<AppsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final apps = ref.watch(installedAppsProvider);
+    final apps = ref.watch(visibleAppsProvider);
+    final hidden = ref.watch(hiddenNowProvider);
     final pinned = ref.watch(pinnedPackagesProvider);
     final q = normalizeEs(_query.trim());
     return HosPage(
       title: 'APPS',
-      subtitle: 'Toca para abrir · mantén pulsado para fijar',
+      subtitle: hidden.isEmpty
+          ? 'Toca para abrir · mantén pulsado para fijar'
+          : 'Ocultas en este bloque: ${hidden.map((c) => c.labelEs).join(', ')}',
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -133,7 +224,7 @@ class _AppsPageState extends ConsumerState<AppsPage> {
                     leading: AppIcon(app.package),
                     title: Text(app.label),
                     trailing: pinned.contains(app.package) ? const Icon(Icons.push_pin) : null,
-                    onTap: () => ref.read(launcherProvider).launch(app.package),
+                    onTap: () => openApp(context, ref, app),
                     onLongPress: () => _options(app),
                   );
                 },

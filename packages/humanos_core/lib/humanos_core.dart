@@ -26,6 +26,7 @@ export 'src/notification_policy.dart';
 export 'src/pantry_scorer.dart';
 export 'src/readiness.dart';
 export 'src/rep_tempo.dart';
+export 'src/screen_time.dart';
 export 'src/schedule.dart';
 export 'src/streaks.dart';
 export 'src/text_es.dart';
