@@ -80,14 +80,14 @@ void main() {
     addTearDown(db.close);
     await expectLater(
       db.customStatement(
-        "INSERT INTO pay_weeks (paid_on, amount_cents, normal_minutes, overtime_minutes, created_at) "
+        'INSERT INTO pay_weeks (paid_on, amount_cents, normal_minutes, overtime_minutes, created_at) '
         "VALUES ('2026-11-03', 0, 60, 0, '2026-11-03')",
       ),
       throwsA(anything),
     );
     await expectLater(
       db.customStatement(
-        "INSERT INTO pay_weeks (paid_on, amount_cents, normal_minutes, overtime_minutes, created_at) "
+        'INSERT INTO pay_weeks (paid_on, amount_cents, normal_minutes, overtime_minutes, created_at) '
         "VALUES ('2026-11-03', 100, -1, 0, '2026-11-03')",
       ),
       throwsA(anything),
