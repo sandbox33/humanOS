@@ -23,15 +23,17 @@ void main() {
   tearDown(() => db.close());
 
   testWidgets('the app opens on ESTADO with the Spanish bottom navigation', (tester) async {
-    await tester.pumpWidget(ProviderScope(
-      retry: (_, _) => null,
-      overrides: [
-        userDbProvider.overrideWithValue(db),
-        referenceDbProvider.overrideWithValue(fixtureReferenceDb()),
-        clockProvider.overrideWithValue(() => DateTime(2026, 10, 13, 9)),
-      ],
-      child: const HumanOsApp(),
-    ));
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          userDbProvider.overrideWithValue(db),
+          referenceDbProvider.overrideWithValue(fixtureReferenceDb()),
+          clockProvider.overrideWithValue(() => DateTime(2026, 10, 13, 9)),
+        ],
+        child: const HumanOsApp(),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -43,7 +45,9 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
-    for (final label in ['DESPENSA', 'ÍNDICE', 'HÁBITOS', 'AJUSTES']) {
+    final list = find.ancestor(of: find.text('DESPENSA'), matching: find.byType(Scrollable)).first;
+    for (final label in ['DESPENSA', 'ÍNDICE', 'HÁBITOS', 'ASISTENTE', 'AJUSTES']) {
+      await tester.scrollUntilVisible(find.text(label), 120, scrollable: list);
       expect(find.text(label), findsOneWidget, reason: label);
     }
     await tester.pumpWidget(const SizedBox.shrink());

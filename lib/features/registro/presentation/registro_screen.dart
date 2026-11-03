@@ -44,6 +44,18 @@ List<MealSlot> slotsFor(WidgetRef ref, DateTime date) {
   );
 }
 
+/// The block whose time is closest before [now] (half an hour of margin);
+/// lunch on a day without suggested times.
+MealBlock blockNear(List<MealSlot> slots, DateTime now) {
+  if (slots.isEmpty) return MealBlock.lunch;
+  final minute = now.hour * 60 + now.minute;
+  var best = slots.first;
+  for (final s in slots) {
+    if (s.minuteOfDay <= minute + 30) best = s;
+  }
+  return best.block;
+}
+
 /// The day's first planned work window as a meal-schedule frame, or null.
 ShiftConfig? shiftOfDay(WidgetRef ref, DateTime date) {
   final day = DateTime(date.year, date.month, date.day);
@@ -120,14 +132,8 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
 
   /// The block whose time is closest before now (today) or lunch otherwise.
   MealBlock _currentBlock(List<MealSlot> slots, DateTime date) {
-    if (_offset != 0 || slots.isEmpty) return MealBlock.lunch;
-    final now = ref.read(clockProvider)();
-    final minute = now.hour * 60 + now.minute;
-    var best = slots.first;
-    for (final s in slots) {
-      if (s.minuteOfDay <= minute + 30) best = s;
-    }
-    return best.block;
+    if (_offset != 0) return MealBlock.lunch;
+    return blockNear(slots, ref.read(clockProvider)());
   }
 
   Future<void> _add(String date, MealBlock block) async {

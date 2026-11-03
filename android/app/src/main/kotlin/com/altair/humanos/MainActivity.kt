@@ -10,6 +10,7 @@ class MainActivity : FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         DeviceChannels.register(this, flutterEngine.dartExecutor.binaryMessenger)
         ContextBridge.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        LlmBridge.setUp(flutterEngine.dartExecutor.binaryMessenger, LlmBridgeImpl(applicationContext))
     }
 
     @Deprecated("Forwarded to the plugins by the superclass as well.")

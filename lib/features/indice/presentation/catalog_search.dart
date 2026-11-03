@@ -44,6 +44,7 @@ Future<FoodChoice?> pickFood(
   bool pantryFirst = false,
   bool allowRecipes = true,
   bool allowProducts = true,
+  String? initialQuery,
 }) =>
     Navigator.of(context).push<FoodChoice>(MaterialPageRoute(
       fullscreenDialog: true,
@@ -53,6 +54,7 @@ Future<FoodChoice?> pickFood(
           pantryFirst: pantryFirst,
           allowRecipes: allowRecipes,
           allowProducts: allowProducts,
+          initialQuery: initialQuery,
           onPick: (choice) => Navigator.of(context).pop(choice),
         ),
       ),
@@ -67,9 +69,13 @@ class CatalogSearchBody extends ConsumerStatefulWidget {
     this.pantryFirst = false,
     this.allowRecipes = true,
     this.allowProducts = true,
+    this.initialQuery,
   });
 
   final ValueChanged<FoodChoice> onPick;
+
+  /// Search text to start with (the assistant's food name).
+  final String? initialQuery;
   final bool pantryFirst;
   final bool allowRecipes;
   final bool allowProducts;
@@ -79,8 +85,8 @@ class CatalogSearchBody extends ConsumerStatefulWidget {
 }
 
 class _CatalogSearchBodyState extends ConsumerState<CatalogSearchBody> {
-  final _controller = TextEditingController();
-  String _query = '';
+  late final _controller = TextEditingController(text: widget.initialQuery ?? '');
+  late String _query = widget.initialQuery ?? '';
 
   @override
   void dispose() {

@@ -8,6 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -103,6 +105,7 @@ object ContextBridge {
                     ContextState.fireEventReminders(activity, call.argument<String>("trigger") ?: "llegar", call.argument<Int>("zoneId"))
                     result.success(null)
                 }
+                "unmeteredNetwork" -> result.success(unmetered(activity))
                 "ignoringBatteryOptimizations" -> result.success(ignoringBattery(activity))
                 "requestIgnoreBatteryOptimizations" -> result.success(
                     open(activity, Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri(activity))),
@@ -193,6 +196,14 @@ object ContextBridge {
                 })
             }
             .addOnFailureListener { result.success(null) }
+    }
+
+    /** Wi-Fi or another network that is not metered (model downloads). */
+    private fun unmetered(context: Context): Boolean {
+        val manager = context.getSystemService(ConnectivityManager::class.java)
+        val caps = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun ignoringBattery(context: Context): Boolean =

@@ -135,6 +135,8 @@ abstract class DeviceContext {
   Future<void> setManual({required bool? silencing, required DateTime? until});
   Future<void> setEventReminders(List<NativeEventReminder> reminders);
   Future<void> fireManual(String trigger, {int? zoneId});
+  /// Wi-Fi or another network that is not metered.
+  Future<bool> unmeteredNetwork();
   Future<bool> ignoringBatteryOptimizations();
   Future<bool> requestIgnoreBatteryOptimizations();
   Future<bool> openAutostart();
@@ -239,6 +241,8 @@ class ChannelDeviceContext implements DeviceContext {
       _channel.invokeMethod<void>('fireManual', {'trigger': trigger, 'zoneId': zoneId});
 
   @override
+  Future<bool> unmeteredNetwork() => _flag('unmeteredNetwork');
+  @override
   Future<bool> ignoringBatteryOptimizations() => _flag('ignoringBatteryOptimizations');
   @override
   Future<bool> requestIgnoreBatteryOptimizations() => _flag('requestIgnoreBatteryOptimizations');
@@ -284,6 +288,8 @@ class UnavailableDeviceContext implements DeviceContext {
   Future<void> setEventReminders(List<NativeEventReminder> reminders) async {}
   @override
   Future<void> fireManual(String trigger, {int? zoneId}) async {}
+  @override
+  Future<bool> unmeteredNetwork() async => false;
   @override
   Future<bool> ignoringBatteryOptimizations() async => false;
   @override

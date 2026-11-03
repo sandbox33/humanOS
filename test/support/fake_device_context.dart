@@ -77,6 +77,9 @@ class FakeDeviceContext implements DeviceContext {
   @override
   Future<void> fireManual(String trigger, {int? zoneId}) async => fired.add((trigger, zoneId));
 
+  bool wifi = true;
+  @override
+  Future<bool> unmeteredNetwork() async => wifi;
   @override
   Future<bool> ignoringBatteryOptimizations() async => false;
   @override
