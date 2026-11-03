@@ -9,5 +9,17 @@ class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         DeviceChannels.register(this, flutterEngine.dartExecutor.binaryMessenger)
+        ContextBridge.register(this, flutterEngine.dartExecutor.binaryMessenger)
+    }
+
+    @Deprecated("Forwarded to the plugins by the superclass as well.")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        @Suppress("DEPRECATION")
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        ContextBridge.onPermissionResult(requestCode)
     }
 }

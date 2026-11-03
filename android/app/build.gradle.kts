@@ -66,6 +66,8 @@ kotlin {
 dependencies {
     // Version required by flutter_local_notifications (see its README).
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // GeofencingClient and a single current-location reading (zones).
+    implementation("com.google.android.gms:play-services-location:21.4.0")
 }
 
 flutter {

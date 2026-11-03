@@ -2,9 +2,11 @@
 library;
 
 export 'src/adaptive_tdee.dart';
+export 'src/alarms.dart';
 export 'src/assumptions.dart';
 export 'src/attributes.dart';
 export 'src/confidence.dart';
+export 'src/context_mode.dart';
 export 'src/cooked_food_safety.dart';
 export 'src/day.dart';
 export 'src/double_progression.dart';

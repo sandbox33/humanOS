@@ -73,8 +73,8 @@ jobs:
           cache: true
       - run: flutter --version
       - run: flutter pub get
-      - name: pubspec.lock resuelto (gzip + base64)
-        run: echo "LOCK_B64=$(gzip -9c pubspec.lock | base64 -w0)"
+      - name: pubspec.lock resuelto frente al commit
+        run: git --no-pager diff --exit-code -- pubspec.lock || echo "::warning::pubspec.lock cambió al resolver; súbelo con el diff de arriba."
       - name: Generar código (drift)
         run: dart run build_runner build
       - name: Esquema drift guardado igual al código
@@ -85,7 +85,8 @@ jobs:
             diff -u "drift_schemas/$(basename "$f")" "$f"
           done
       - run: flutter analyze
-      - run: flutter test
+      # Every test by name, and none may hang the job.
+      - run: flutter test --reporter expanded --timeout 90s
 
   android:
     name: APK de prueba (firma de depuración)

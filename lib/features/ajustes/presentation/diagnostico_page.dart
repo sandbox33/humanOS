@@ -16,6 +16,7 @@ import '../../../services/services.dart';
 import '../../../telemetry/confidence.dart';
 import '../../../telemetry/health_connect_source.dart';
 import '../../../telemetry/telemetry_repository.dart';
+import '../../contexto/presentation/context_diagnostics.dart';
 import '../../estado/domain/readiness_today.dart';
 
 final _availabilityProvider = FutureProvider<HealthAvailability?>((ref) async {
@@ -82,6 +83,7 @@ class DiagnosticoPage extends ConsumerWidget {
             ],
           ),
         ),
+        const ContextDiagnosticsPanel(),
         TerminalPanel(
           label: 'Health Connect',
           child: Column(

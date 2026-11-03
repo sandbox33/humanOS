@@ -7,6 +7,9 @@ import 'package:humanos_core/humanos_core.dart';
 
 import '../data/settings.dart';
 import '../features/ajustes/presentation/ajustes_screen.dart';
+import '../features/alarmas/presentation/alarmas_screen.dart';
+import '../features/contexto/domain/context_model.dart';
+import '../features/contexto/presentation/contexto_screen.dart';
 import '../features/despensa/presentation/despensa_screen.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
@@ -48,6 +51,7 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
   Timer? _habitDebounce;
+  StreamSubscription<void>? _contextChanges;
   bool _started = false;
 
   @override
@@ -55,12 +59,14 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _startup());
+    _contextChanges = ref.read(deviceContextProvider).changes.listen((_) => unawaited(_readTransitions()));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _habitDebounce?.cancel();
+    unawaited(_contextChanges?.cancel());
     super.dispose();
   }
 
@@ -69,6 +75,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     if (state == AppLifecycleState.resumed) {
       ref.read(todayProvider.notifier).refresh();
       unawaited(_refreshExternal());
+      unawaited(_readTransitions());
     }
   }
 
@@ -90,6 +97,34 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     if (!mounted) return;
     await _refreshExternal();
     if (mounted) await rescheduleReminders(ref);
+    // The phone's copies of zones, event reminders and alarms are rebuilt
+    // from the encrypted database on every start.
+    await _readTransitions();
+    if (mounted) await _syncNative(zones: true, eventReminders: true, alarms: true);
+  }
+
+  /// Transitions the phone saw while the app was closed or in background.
+  Future<void> _readTransitions() async {
+    if (!mounted) return;
+    try {
+      await drainTransitions(ref);
+    } on Object {
+      // The phone's queue stays; it is read again on the next start.
+    }
+  }
+
+  Future<void> _syncNative({bool zones = false, bool eventReminders = false, bool alarms = false}) async {
+    try {
+      if (zones && mounted) {
+        final settings = ref.read(settingsProvider);
+        if (settings.zonesEnabled && settings.batteryOverLimit) await disableZones(ref);
+        if (mounted) await syncZones(ref);
+      }
+      if (eventReminders && mounted) await syncEventReminders(ref);
+      if (alarms && mounted) await syncAlarms(ref);
+    } on Object {
+      // Platform unavailable: the database keeps everything.
+    }
   }
 
   /// Health Connect (only after the user granted it once) and screen time.
@@ -159,6 +194,22 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
         (previous, next) {
       if (previous != next) unawaited(rescheduleReminders(ref));
     });
+    ref.listen(zoneRowsProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(_syncNative(zones: true, eventReminders: true));
+    });
+    ref.listen(settingsProvider.select((s) => (s.zonesEnabled, s.batteryOverLimit)), (previous, next) {
+      if (previous != next) unawaited(_syncNative(zones: true, eventReminders: true));
+    });
+    ref.listen(contextParamsProvider.select((p) => (p.maxActiveZones, p.responsivenessMin, p.staleHours)),
+        (previous, next) {
+      if (previous != next) unawaited(_syncNative(zones: true));
+    });
+    ref.listen(eventReminderRowsProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(_syncNative(eventReminders: true));
+    });
+    ref.listen(alarmRowsProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
+    });
     final index = ref.watch(shellTabProvider);
     return Scaffold(
       body: IndexedStack(
@@ -211,6 +262,9 @@ class MasScreen extends StatelessWidget {
             () => const IndiceScreen()),
         tile('HÁBITOS', 'Rachas, misión mínima y atributos', Icons.check_box_outlined,
             () => const HabitosScreen()),
+        tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
+            () => const ContextoScreen()),
+        tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
         tile('AJUSTES', 'Perfil, supuestos, datos de salud y copias', Icons.settings_outlined,
             () => const AjustesScreen()),
         const SizedBox(height: 12),

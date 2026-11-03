@@ -4,6 +4,7 @@ import '../data/off_client.dart';
 import '../telemetry/ble_hr_source.dart';
 import '../telemetry/health_connect_source.dart';
 import '../telemetry/usage_stats.dart';
+import 'device_context.dart';
 import 'notifications.dart';
 import 'screen_awake.dart';
 import 'tempo_audio.dart';
@@ -12,6 +13,8 @@ import 'tempo_audio.dart';
 /// override them with fakes so no plugin channel is touched.
 final notificationServiceProvider =
     Provider<NotificationService>((ref) => SilentNotificationService());
+final alarmServiceProvider = Provider<AlarmService>((ref) => SilentNotificationService());
+final deviceContextProvider = Provider<DeviceContext>((ref) => const UnavailableDeviceContext());
 final tempoAudioProvider = Provider<TempoAudio>((ref) => SilentTempoAudio());
 final screenAwakeProvider = Provider<ScreenAwake>((ref) => NoopScreenAwake());
 final healthSourceProvider = Provider<HealthSource?>((ref) => null);

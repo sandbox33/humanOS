@@ -27,6 +27,11 @@ class AppSettingsState {
     this.sessionReminder = true,
     this.fiberFirst = false,
     this.healthConnectPrompted = false,
+    this.zonesEnabled = false,
+    this.zonesDisclosureAt,
+    this.batteryLimitPct,
+    this.batteryWithZonesPct,
+    this.batteryWithoutZonesPct,
   });
 
   factory AppSettingsState.fromMap(Map<String, String> map) => AppSettingsState(
@@ -41,6 +46,11 @@ class AppSettingsState {
         sessionReminder: map[SettingKey.sessionReminder] != '0',
         fiberFirst: map[SettingKey.fiberFirst] == '1',
         healthConnectPrompted: map[SettingKey.healthConnectPrompted] == '1',
+        zonesEnabled: map[SettingKey.zonesEnabled] == '1',
+        zonesDisclosureAt: map[SettingKey.zonesDisclosureAt],
+        batteryLimitPct: int.tryParse(map[SettingKey.batteryLimitPct] ?? ''),
+        batteryWithZonesPct: int.tryParse(map[SettingKey.batteryWithZonesPct] ?? ''),
+        batteryWithoutZonesPct: int.tryParse(map[SettingKey.batteryWithoutZonesPct] ?? ''),
       );
 
   final AccentColor accent;
@@ -66,6 +76,28 @@ class AppSettingsState {
   /// default because it lowers intake in a surplus phase.
   final bool fiberFirst;
   final bool healthConnectPrompted;
+
+  /// Zones are opt-in: off until the user turns them on after the
+  /// explanation screen.
+  final bool zonesEnabled;
+  final String? zonesDisclosureAt;
+
+  /// The user's battery test: % used in 24 h with and without zones, and
+  /// the extra % they accept.
+  final int? batteryLimitPct;
+  final int? batteryWithZonesPct;
+  final int? batteryWithoutZonesPct;
+
+  /// Extra battery of the zones, when both 24-h measurements exist.
+  int? get batteryZonesCostPct => batteryWithZonesPct == null || batteryWithoutZonesPct == null
+      ? null
+      : batteryWithZonesPct! - batteryWithoutZonesPct!;
+
+  /// The measured cost is above the user's limit: zones stay off by default.
+  bool get batteryOverLimit {
+    final cost = batteryZonesCostPct, limit = batteryLimitPct;
+    return cost != null && limit != null && cost > limit;
+  }
 }
 
 abstract final class SettingKey {
@@ -90,6 +122,11 @@ abstract final class SettingKey {
   static const weightPrefill = 'weight_prefill_kg';
   static const healthGranted = 'health_granted';
   static const notificationsAsked = 'notifications_asked';
+  static const zonesEnabled = 'zones_enabled';
+  static const zonesDisclosureAt = 'zones_disclosure_at';
+  static const batteryLimitPct = 'battery_limit_pct';
+  static const batteryWithZonesPct = 'battery_with_zones_pct';
+  static const batteryWithoutZonesPct = 'battery_without_zones_pct';
 }
 
 class SettingsRepository {

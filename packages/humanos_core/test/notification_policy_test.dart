@@ -93,6 +93,21 @@ void main() {
     expect(nextOutsideSilence(at(9, 0), [a, b]), at(15, 0));
   });
 
+  test('in chamba or entreno each reminder follows its context rule', () {
+    expect(contextRuleFor(NotificationKind.hydration), ContextRule.allow);
+    expect(contextRuleFor(NotificationKind.foodSafety), ContextRule.allow);
+    expect(contextRuleFor(NotificationKind.meal), ContextRule.drop);
+    expect(
+      contextRuleFor(NotificationKind.meal, inPlannedBreak: true),
+      ContextRule.allow,
+    );
+    expect(contextRuleFor(NotificationKind.session), ContextRule.defer);
+    expect(contextRuleFor(NotificationKind.dayClose), ContextRule.defer);
+    expect(inPlannedBreak(at(12, 10), windows), isTrue);
+    expect(inPlannedBreak(at(12, 30), windows), isFalse);
+    expect(inPlannedBreak(at(10, 0), windows), isFalse);
+  });
+
   test('circular ranges', () {
     expect(inCircularRange(30, 1380, 60), isTrue);
     expect(inCircularRange(90, 1380, 60), isFalse);

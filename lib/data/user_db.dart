@@ -1,12 +1,15 @@
 import 'package:drift/drift.dart';
 
 import 'migrations/v1_to_v2.dart';
+import 'migrations/v2_to_v3.dart';
+import 'tables/context_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
 import 'tables/profile_tables.dart';
 import 'tables/training_tables.dart';
 import 'tables/work_tables.dart';
 
+export 'tables/context_tables.dart';
 export 'tables/food_tables.dart';
 export 'tables/habit_tables.dart';
 export 'tables/profile_tables.dart';
@@ -45,13 +48,20 @@ part 'user_db.g.dart';
   // Schema v2
   WorkEntries,
   WorkTemplates,
+  // Schema v3
+  Zones,
+  ContextEvents,
+  ModeCorrections,
+  StateCheckins,
+  EventReminders,
+  MorningAlarms,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 2;
+  static const currentSchema = 3;
 
   @override
   int get schemaVersion => currentSchema;
@@ -64,6 +74,8 @@ class UserDb extends _$UserDb {
             switch (version) {
               case 1:
                 await migrateV1ToV2(m, this);
+              case 2:
+                await migrateV2ToV3(m, this);
             }
           }
         },
@@ -99,5 +111,11 @@ class UserDb extends _$UserDb {
         attributes,
         workTemplates,
         workEntries,
+        zones,
+        contextEvents,
+        modeCorrections,
+        stateCheckins,
+        eventReminders,
+        morningAlarms,
       ];
 }

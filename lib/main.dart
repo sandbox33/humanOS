@@ -12,6 +12,7 @@ import 'data/reference_db.dart';
 import 'data/reference_installer.dart';
 import 'data/seed.dart';
 import 'data/settings.dart';
+import 'services/device_context.dart';
 import 'services/notifications.dart';
 import 'services/screen_awake.dart';
 import 'services/services.dart';
@@ -53,6 +54,7 @@ Future<void> main() async {
   }
 
   final audio = PoolTempoAudio();
+  final scheduler = NativeNotificationService();
   unawaited(audio.init().catchError((Object _) {}));
 
   runApp(ProviderScope(
@@ -66,7 +68,9 @@ Future<void> main() async {
       )),
       referenceDbProvider.overrideWithValue(reference),
       referenceStatusProvider.overrideWithValue(status),
-      notificationServiceProvider.overrideWithValue(LocalNotificationService()),
+      notificationServiceProvider.overrideWithValue(scheduler),
+      alarmServiceProvider.overrideWithValue(scheduler),
+      deviceContextProvider.overrideWithValue(ChannelDeviceContext()),
       tempoAudioProvider.overrideWithValue(audio),
       screenAwakeProvider.overrideWithValue(WindowScreenAwake()),
       healthSourceProvider.overrideWithValue(PluginHealthSource()),

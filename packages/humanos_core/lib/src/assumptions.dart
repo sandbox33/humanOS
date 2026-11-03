@@ -20,7 +20,8 @@ enum AssumptionGroup {
   seguridad('SEGURIDAD ALIMENTARIA'),
   horario('HORARIO DE COMIDAS'),
   atributos('ATRIBUTOS'),
-  avisos('AVISOS');
+  avisos('AVISOS'),
+  contexto('CONTEXTO');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -176,6 +177,14 @@ abstract final class A {
   static const quietFromH = 'quiet_from_h';
   static const quietToH = 'quiet_to_h';
   static const workOpenWindowH = 'work_open_window_h';
+  static const zoneMinRadiusM = 'zone_min_radius_m';
+  static const zoneDefaultRadiusM = 'zone_default_radius_m';
+  static const zoneMaxActive = 'zone_max_active';
+  static const geofenceResponsivenessMin = 'geofence_responsiveness_min';
+  static const modeCorrectionH = 'mode_correction_h';
+  static const contextStaleH = 'context_stale_h';
+  static const lowStateMax = 'low_state_max';
+  static const alarmSnoozeMin = 'alarm_snooze_min';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1469,6 +1478,105 @@ const List<AssumptionDef> assumptionCatalog = [
     explainEs:
         'Si empiezas un trabajo sin hora de fin, los avisos callan hasta que '
         'marques TERMINAR o pasen 12 h.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.zoneMinRadiusM,
+    value: 150,
+    min: 150,
+    max: 2000,
+    unitEs: 'm',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Radio mínimo de una zona',
+    explainEs:
+        'Con menos de 150 m las geocercas fallan a menudo: el GPS del '
+        'teléfono no es tan preciso dentro de edificios.',
+    source: 'Google, guía de geocercas de Android (radio de 100–150 m o más)',
+  ),
+  AssumptionDef(
+    key: A.zoneDefaultRadiusM,
+    value: 200,
+    min: 150,
+    max: 2000,
+    unitEs: 'm',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Radio inicial de una zona nueva',
+    explainEs: 'Lo puedes cambiar en cada zona.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.zoneMaxActive,
+    value: 5,
+    min: 1,
+    max: 100,
+    unitEs: 'zonas',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Zonas activas como máximo',
+    explainEs:
+        'Pocas zonas gastan menos batería. Android permite hasta 100 por app.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.geofenceResponsivenessMin,
+    value: 3,
+    min: 1,
+    max: 10,
+    unitEs: 'min',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Demora aceptable al entrar o salir',
+    explainEs:
+        'El teléfono puede avisar una entrada o salida hasta 3 min tarde: '
+        'así gasta menos batería. No se usa para alertas inmediatas.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.modeCorrectionH,
+    value: 4,
+    min: 1,
+    max: 24,
+    unitEs: 'h',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Duración de tu corrección del modo',
+    explainEs: 'Cuando corriges el modo, vale 4 h o hasta que cambie tu zona.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.contextStaleH,
+    value: 16,
+    min: 4,
+    max: 48,
+    unitEs: 'h',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Entrada sin noticias',
+    explainEs:
+        'Si tras entrar a una zona no llega ninguna salida en 16 h, se deja '
+        'de contar: pudo perderse la salida.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.lowStateMax,
+    value: 2,
+    min: 1,
+    max: 4,
+    unitEs: '1–5',
+    group: AssumptionGroup.contexto,
+    titleEs: 'Energía baja',
+    explainEs:
+        'Un estado de 2 o menos cuenta como energía baja: sin zona ni '
+        'trabajo, el modo pasa a descanso.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.alarmSnoozeMin,
+    value: 5,
+    min: 1,
+    max: 30,
+    unitEs: 'min',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Posponer una alarma',
+    explainEs:
+        'Minutos que propone una alarma nueva para posponer; cada alarma '
+        'guarda los suyos.',
     source: _model,
   ),
 ];
