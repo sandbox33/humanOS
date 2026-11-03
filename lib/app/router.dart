@@ -252,7 +252,11 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
     });
     ref.listen(blockRowsProvider, (previous, next) {
-      if (previous?.value != next.value) unawaited(_syncNative(alarms: true));
+      if (previous?.value != next.value) {
+        unawaited(_syncNative(alarms: true));
+        // B4: meal reminders follow the meal blocks of the schedule.
+        unawaited(rescheduleReminders(ref));
+      }
     });
     ref.listen(adjustmentsProvider, (previous, next) {
       if (previous?.value != next.value) unawaited(_syncNative(alarms: true));

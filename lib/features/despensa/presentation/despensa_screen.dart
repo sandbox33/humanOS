@@ -14,9 +14,13 @@ import '../../../app/widgets/status_widgets.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/nutrition_resolver.dart';
 import '../../../data/user_db.dart';
+import '../../finanzas/domain/finance_model.dart';
 import '../../indice/presentation/catalog_search.dart';
 import '../../registro/domain/intake.dart';
+import '../domain/meal_day.dart';
 import '../domain/pantry_model.dart';
+import 'meals_tab.dart';
+import 'receipt_page.dart';
 
 /// DESPENSA: stock with the best option now, purchases (receipt OCR),
 /// cooked batches with food-safety timing, and the cheapest plan.
@@ -26,7 +30,7 @@ class DespensaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 4,
+      length: 6,
       child: HosPage(
         title: 'DESPENSA',
         bottom: TabBar(
@@ -35,6 +39,8 @@ class DespensaScreen extends StatelessWidget {
             Tab(text: 'STOCK'),
             Tab(text: 'COMPRAS'),
             Tab(text: 'COCIDOS'),
+            Tab(text: 'COMIDAS'),
+            Tab(text: 'LISTA'),
             Tab(text: 'PLAN'),
           ],
         ),
@@ -42,6 +48,8 @@ class DespensaScreen extends StatelessWidget {
           _StockTab(),
           _PurchasesTab(),
           _CookedTab(),
+          MealsTab(),
+          ShoppingTab(),
           _PlanTab(),
         ]),
       ),
@@ -293,13 +301,44 @@ class _PurchasesTab extends ConsumerWidget {
       accept: 'FOTOGRAFIAR',
     );
     if (scan) text = await _readReceipt();
+    final receipt = text == null ? null : parseReceipt(text);
+    final paid = total ?? receipt?.totalCents;
     final id = await ref.read(pantryRepositoryProvider).addPurchase(
           date: isoDate(ref.read(todayProvider)),
           store: store.isEmpty ? null : store,
-          totalCents: total,
+          totalCents: paid,
           rawText: text,
         );
     if (!context.mounted) return;
+    // B4: the same purchase is an expense too (in the user's category).
+    if (paid != null && paid > 0) {
+      final settings = ref.read(settingsRepositoryProvider);
+      final category = await askText(
+        context,
+        title: 'Registrar ${formatCents(paid)} como gasto en…',
+        initial: await settings.get(FoodKey.purchaseCategory),
+        hint: 'Tu categoría (vacío: no registrar)',
+      );
+      if (category != null && category.trim().isNotEmpty) {
+        final finance = ref.read(financeRepositoryProvider);
+        final label = await finance.ensureCategory(category);
+        await finance.addExpense(
+          date: ref.read(clockProvider)(),
+          category: label,
+          amountCents: paid,
+          planned: true,
+          note: store.isEmpty ? 'Compra' : 'Compra en $store',
+        );
+        await settings.set(FoodKey.purchaseCategory, label);
+      }
+      if (!context.mounted) return;
+    }
+    if (receipt != null && receipt.lines.isNotEmpty) {
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ReceiptLinesPage(purchaseId: id, receipt: receipt),
+      ));
+      if (!context.mounted) return;
+    }
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => _PurchasePage(purchaseId: id),
     ));

@@ -26,6 +26,7 @@ import '../../../services/services.dart';
 import '../../../telemetry/health_connect_source.dart';
 import 'ble_page.dart';
 import 'diagnostico_page.dart';
+import 'food_goals_panel.dart';
 import 'supuestos_page.dart';
 
 /// AJUSTES: profile, assumptions, appearance, reminders, health data,
@@ -60,6 +61,7 @@ class AjustesScreen extends ConsumerWidget {
             ],
           ),
         ),
+        const FoodGoalsPanel(),
         const _AppearancePanel(),
         const _RemindersPanel(),
         const _HealthPanel(),

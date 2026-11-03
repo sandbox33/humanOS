@@ -7,11 +7,13 @@ import 'migrations/v4_to_v5.dart';
 import 'migrations/v5_to_v6.dart';
 import 'migrations/v6_to_v7.dart';
 import 'migrations/v7_to_v8.dart';
+import 'migrations/v8_to_v9.dart';
 import 'tables/context_tables.dart';
 import 'tables/dns_tables.dart';
 import 'tables/finance_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
+import 'tables/pantry_plan_tables.dart';
 import 'tables/profile_tables.dart';
 import 'tables/schedule_tables.dart';
 import 'tables/screen_tables.dart';
@@ -77,13 +79,16 @@ part 'user_db.g.dart';
   AppUsageDays,
   // Schema v8
   DnsDomains,
+  // Schema v9
+  FoodHandlingFlags,
+  ReceiptLinks,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 8;
+  static const currentSchema = 9;
 
   @override
   int get schemaVersion => currentSchema;
@@ -108,6 +113,8 @@ class UserDb extends _$UserDb {
                 await migrateV6ToV7(m, this);
               case 7:
                 await migrateV7ToV8(m, this);
+              case 8:
+                await migrateV8ToV9(m, this);
             }
           }
         },
@@ -158,5 +165,7 @@ class UserDb extends _$UserDb {
         appClasses,
         appUsageDays,
         dnsDomains,
+        foodHandlingFlags,
+        receiptLinks,
       ];
 }

@@ -196,6 +196,7 @@ abstract final class A {
   static const maxAdvicePerDay = 'max_advice_per_day';
   static const blockMinFlexibleMin = 'block_min_flexible_min';
   static const mealBlockMin = 'meal_block_min';
+  static const shoppingCoverDays = 'shopping_cover_days';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -355,14 +356,14 @@ const List<AssumptionDef> assumptionCatalog = [
   // ------------------------------------------------------------ MACROS
   AssumptionDef(
     key: A.proteinGPerKg,
-    value: 1.8,
+    value: 2.0,
     min: 1.6,
     max: 2.2,
     unitEs: 'g/kg',
     group: AssumptionGroup.macros,
     titleEs: 'Proteína diaria por kg',
     explainEs:
-        '1,8 g por kg de peso al día. El cálculo la limita entre 1,6 y '
+        '2,0 g por kg de peso al día. El cálculo la limita entre 1,6 y '
         '2,2 g/kg: por encima de ~2,2 no se ha demostrado beneficio adicional '
         'para ganar músculo.',
     source: 'Morton RW y col., Br J Sports Med 2018;52:376–384',
@@ -1699,6 +1700,19 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.horario,
     titleEs: 'Duración de una comida',
     explainEs: 'Lo que dura un bloque de comida cuando no le pusiste duración.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.shoppingCoverDays,
+    value: 7,
+    min: 1,
+    max: 31,
+    unitEs: 'días',
+    group: AssumptionGroup.despensa,
+    titleEs: 'Días que cubre la lista de compra',
+    explainEs:
+        'La lista de compra calcula lo que comiste por día en la última semana, '
+        'lo multiplica por estos días y resta lo que hay en la despensa.',
     source: _model,
   ),
 ];

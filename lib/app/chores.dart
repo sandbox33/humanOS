@@ -4,6 +4,7 @@ import 'package:humanos_core/humanos_core.dart';
 
 import '../data/settings.dart';
 import '../data/user_db.dart';
+import '../features/despensa/domain/meal_day.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
 import '../features/heavy_duty/domain/training_plan.dart';
@@ -134,7 +135,21 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
     final day = DateTime(d.year, d.month, d.day);
     final windows = [...plannedWindows(day, schedules), ?runningWindow];
 
-    if (settings.mealReminders) {
+    // B4: with meal blocks in the user's schedule, the reminders follow them.
+    final scheduledMeals = ref.read(scheduleMealSlotsProvider(offset));
+    if (settings.mealReminders && scheduledMeals.isNotEmpty) {
+      for (final slot in scheduledMeals) {
+        final at = day.add(Duration(minutes: slot.minuteOfDay));
+        if (!allowed(NotificationKind.meal, at, windows)) continue;
+        reminders.add(ScheduledReminder(
+          channel: ReminderChannel.meals,
+          at: at,
+          title: slot.contextEs.toUpperCase(),
+          body: '${slot.clock} · lo que toca está en INICIO',
+          rule: contextRuleFor(NotificationKind.meal, inPlannedBreak: inPlannedBreak(at, windows)),
+        ));
+      }
+    } else if (settings.mealReminders) {
       final frame = mealFrameFor(day, windows);
       if (frame != null) {
         for (final slot in mealSchedule(
@@ -153,6 +168,19 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
             rule: contextRuleFor(NotificationKind.meal, inPlannedBreak: inPlannedBreak(at, windows)),
           ));
         }
+      }
+    }
+
+    if (offset == 0 && settings.mealReminders) {
+      final cook = cookReminderFor(ref, day);
+      if (cook != null && cook.at.isAfter(ref.read(clockProvider)()) && allowed(NotificationKind.meal, cook.at, windows)) {
+        reminders.add(ScheduledReminder(
+          channel: ReminderChannel.meals,
+          at: cook.at,
+          title: 'COCINA EN DOS TIEMPOS',
+          body: cook.body,
+          rule: contextRuleFor(NotificationKind.meal),
+        ));
       }
     }
 

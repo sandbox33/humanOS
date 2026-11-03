@@ -75,7 +75,8 @@ humanOS/
 │                           advisor/ (finance, rules: Fase 5, no LLM),
 │                           day_schedule (B1: template + one-day changes),
 │                           screen_time (B2: usage events → minutes, hiding),
-│                           dns_filter (B3: domains, export, verdict)
+│                           dns_filter (B3: domains, export, verdict),
+│                           meal_plan, receipt_parser (B4)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -137,6 +138,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `schedule_blocks`, `schedule_adjustments` (schema 6) | new tables | B1: the weekly day template (user blocks, weekdays, alarm) and one-date changes (skip, move, end later, add) |
 | user `app_classes`, `app_usage_days` (schema 7) | new tables | B2: the user's category per app and minutes per app per day (the phone keeps its usage events only some days) |
 | user `dns_domains` (schema 8) | new table | B3: the user's blocked and allowed domains (nothing preset) |
+| user `food_handling_flags`, `receipt_links` (schema 9) | new tables | B4: the user's word on how a food keeps (needs cold / lunch box / needs cooking) over the suggestion from its food group; receipt lines linked to a food once |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -213,6 +215,19 @@ the setup of a NextDNS or AdGuard DNS profile, and checks it by resolving
 the first blocked and the first allowed domain through the system resolver
 (`InternetAddress.lookup`, which the private DNS answers). A local VPN
 filter is not included (conflicts with other VPNs, battery).
+
+Meals (B4) are the meal blocks of the user's schedule: each gets its share
+of the day's energy and protein from the meal weights (SUPUESTOS → HORARIO
+DE COMIDAS), and REGISTRO, the meal reminders and INICIO's one-tap COMER
+AHORA follow them (without meal blocks, the work-shift engine as before).
+The day's energy can be a fixed target set by the user (AJUSTES → METAS DE
+COMIDA, with RESTABLECER). The plan by meal uses only pantry food that fits
+the meal: lunch-box food that needs no cooking for mid-morning and
+mid-afternoon; without a fridge, fresh food only on the day it was bought.
+How a food keeps is suggested from its food group and the user corrects it.
+A purchase is also an expense (the user's category), and receipt text read
+on the phone becomes lines the user confirms, each product linked to the
+reference database once.
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,

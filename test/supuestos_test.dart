@@ -39,15 +39,15 @@ void main() {
     await tester.tap(find.text('ACEPTAR'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Fuera de rango'), findsOneWidget);
-    expect(await stored(), 1.8);
+    expect(await stored(), 2.0);
 
     await tester.tap(title);
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '2,0');
+    await tester.enterText(find.byType(TextField), '1,9');
     await tester.tap(find.text('ACEPTAR'));
     await tester.pumpAndSettle();
-    expect(await stored(), 2.0);
-    expect(find.textContaining('RESTAURAR'), findsOneWidget);
+    expect(await stored(), 1.9);
+    expect(find.textContaining('RESTABLECER'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

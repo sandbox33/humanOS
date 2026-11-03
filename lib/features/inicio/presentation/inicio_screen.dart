@@ -12,6 +12,8 @@ import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/nutrients.dart';
 import '../../../services/services.dart';
+import '../../despensa/domain/meal_day.dart';
+import '../../despensa/domain/pantry_model.dart';
 import '../../estado/domain/targets.dart';
 import '../../filtro/domain/dns_model.dart';
 import '../../finanzas/domain/finance_model.dart';
@@ -35,6 +37,7 @@ class InicioScreen extends ConsumerWidget {
           child: PanelList(children: [
             ClockHeader(),
             _NowPanel(),
+            MealNowPanel(),
             _DayNumbers(),
             PinnedApps(),
           ]),
@@ -228,6 +231,67 @@ class PinnedApps extends ConsumerWidget {
             outlined: true,
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AppsPage())),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// COMER AHORA (B4): what the current meal of the schedule needs from the
+/// pantry, logged with one tap (the pantry is decremented; short stock
+/// warns, never blocks).
+class MealNowPanel extends ConsumerWidget {
+  const MealNowPanel({super.key});
+
+  Future<void> _logAll(BuildContext context, WidgetRef ref, SlotPlan p) async {
+    final stock = {for (final s in ref.read(stockViewProvider)) s.key: s};
+    final repo = ref.read(mealsRepositoryProvider);
+    final date = isoDate(ref.read(todayProvider));
+    var short = 0;
+    for (final e in p.grams.entries) {
+      final s = stock[e.key];
+      if (s == null) continue;
+      final result = await repo.addItem(
+        date: date,
+        block: p.slot.block,
+        grams: e.value.roundToDouble(),
+        foodId: s.row.foodId,
+        barcode: s.row.barcode,
+        pantryItemId: s.row.id,
+      );
+      if (result.insufficient) short++;
+    }
+    if (!context.mounted) return;
+    toast(
+      context,
+      short == 0
+          ? '${p.slot.contextEs} registrado.'
+          : '${p.slot.contextEs} registrado. $short alimento(s) con menos stock del registrado: revisa la despensa.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plans = ref.watch(mealDayPlanProvider);
+    if (plans.isEmpty) return const SizedBox.shrink();
+    final now = ref.watch(minuteTickProvider).value ?? ref.watch(clockProvider)();
+    final slot = slotAt([for (final p in plans) p.slot], now.hour * 60 + now.minute);
+    final p = plans.firstWhere((x) => x.slot == slot);
+    final stock = {for (final s in ref.watch(stockViewProvider)) s.key: s};
+    return TerminalPanel(
+      label: 'Comer ahora · ${p.slot.contextEs}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (p.noteEs != null)
+            Note(p.noteEs!)
+          else if (p.grams.isEmpty)
+            Note(p.plan?.messageEs ?? 'La despensa no alcanza para esta comida.')
+          else ...[
+            for (final e in p.grams.entries) DataLine(stock[e.key]?.food.name ?? e.key, fmtNum(e.value, unit: 'g')),
+            const SizedBox(height: 8),
+            BigButton(label: 'Lo comí', icon: Icons.check, onPressed: () => _logAll(context, ref, p)),
+          ],
         ],
       ),
     );
