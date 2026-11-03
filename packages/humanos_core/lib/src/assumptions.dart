@@ -23,7 +23,8 @@ enum AssumptionGroup {
   avisos('AVISOS'),
   contexto('CONTEXTO'),
   asistente('ASISTENTE'),
-  finanzas('FINANZAS');
+  finanzas('FINANZAS'),
+  cierre('CIERRE DEL DÍA');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -199,6 +200,8 @@ abstract final class A {
   static const shoppingCoverDays = 'shopping_cover_days';
   static const spendPaceDays = 'spend_pace_days';
   static const payWeeksForRate = 'pay_weeks_for_rate';
+  static const closeTrendMinDays = 'close_trend_min_days';
+  static const closeTrendWindowDays = 'close_trend_window_days';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1741,6 +1744,32 @@ const List<AssumptionDef> assumptionCatalog = [
     explainEs:
         'Cuántos de tus últimos pagos se usan para calcular el valor real de la hora '
         'normal y de la hora extra.',
+    source: _model,
+  ),
+  // ------------------------------------------------------ CIERRE DEL DÍA
+  AssumptionDef(
+    key: A.closeTrendMinDays,
+    value: 14,
+    min: 7,
+    max: 90,
+    unitEs: 'días',
+    group: AssumptionGroup.cierre,
+    titleEs: 'Días antes de ver tendencias',
+    explainEs:
+        'Las tendencias del cierre del día aparecen con al menos estos días cerrados; '
+        'con menos dicen muy poco.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.closeTrendWindowDays,
+    value: 30,
+    min: 7,
+    max: 365,
+    unitEs: 'días',
+    group: AssumptionGroup.cierre,
+    titleEs: 'Días que miran las tendencias',
+    explainEs:
+        'Las tendencias usan tus últimos días cerrados, hasta esta cantidad.',
     source: _model,
   ),
 ];

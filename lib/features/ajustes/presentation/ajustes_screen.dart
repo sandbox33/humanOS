@@ -226,7 +226,7 @@ class _RemindersPanel extends ConsumerWidget {
             title: const Text('CIERRE DEL DÍA'),
             subtitle: Text(settings.dayCloseTime == null
                 ? 'Apagado. Toca para elegir la hora.'
-                : 'A las ${settings.dayCloseTime}: «¿Registraste tu trabajo y tus comidas?». '
+                : 'A las ${settings.dayCloseTime}: aviso para cerrar el día (ánimo, tiempo con personas, tu pregunta). '
                     'Mantén presionado para apagarlo.'),
             onTap: () async {
               final v = await pickClock(context, initial: settings.dayCloseTime, help: 'Cierre del día');

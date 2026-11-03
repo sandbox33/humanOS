@@ -9,6 +9,7 @@ import '../data/settings.dart';
 import '../features/ajustes/presentation/ajustes_screen.dart';
 import '../features/alarmas/presentation/alarmas_screen.dart';
 import '../features/asistente/presentation/asistente_screen.dart';
+import '../features/cierre/presentation/cierre_screen.dart';
 import '../features/contexto/domain/context_model.dart';
 import '../features/contexto/presentation/contexto_screen.dart';
 import '../features/despensa/presentation/despensa_screen.dart';
@@ -329,6 +330,8 @@ class MasScreen extends StatelessWidget {
         tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
             () => const ContextoScreen()),
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
+        tile('CIERRE DEL DÍA', 'Ánimo, tiempo con personas y tu pregunta', Icons.nightlight_outlined,
+            () => const CierreScreen()),
         tile('FILTRO', 'Redes bloqueadas por DNS: lista y comprobación', Icons.dns_outlined, () => const FiltroScreen()),
         tile('PANTALLA', 'Tiempo por app, categoría y bloque', Icons.phone_android, () => const PantallaScreen()),
         tile('FINANZAS', 'Gastos, metas y consejos pequeños', Icons.savings_outlined, () => const FinanzasScreen()),

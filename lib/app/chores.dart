@@ -223,7 +223,7 @@ Future<void> rescheduleReminders(WidgetRef ref) async {
             channel: ReminderChannel.dayClose,
             at: at,
             title: 'CIERRE DEL DÍA',
-            body: '¿Registraste tu trabajo y tus comidas de hoy?',
+            body: 'Ánimo, tiempo con personas y tu pregunta: MÁS → CIERRE DEL DÍA.',
             rule: contextRuleFor(NotificationKind.dayClose),
           ));
         }

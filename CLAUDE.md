@@ -76,7 +76,8 @@ humanOS/
 │                           day_schedule (B1: template + one-day changes),
 │                           screen_time (B2: usage events → minutes, hiding),
 │                           dns_filter (B3: domains, export, verdict),
-│                           meal_plan, receipt_parser (B4), pay (B5)
+│                           meal_plan, receipt_parser (B4), pay (B5),
+│                           day_close (B6)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -88,7 +89,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        inicio|pantalla|filtro|alarmas|asistente|finanzas|habitos|ajustes>/
+│        inicio|pantalla|filtro|cierre|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -140,6 +141,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `dns_domains` (schema 8) | new table | B3: the user's blocked and allowed domains (nothing preset) |
 | user `food_handling_flags`, `receipt_links` (schema 9) | new tables | B4: the user's word on how a food keeps (needs cold / lunch box / needs cooking) over the suggestion from its food group; receipt lines linked to a food once |
 | user `pay_weeks`, `cash_counts` (schema 10) | new tables | B5: what the user was paid with its normal and overtime minutes (and the overtime part when the slip shows it); cash counts kept current with what is logged after them |
+| user `day_closes`, `interaction_categories`, `day_close_interactions` (schema 11) | new tables | B6: the day's close (mood, energy, the user's own question) and minutes with people by the user's categories |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -239,6 +241,15 @@ plus the pay logged after it; the days it lasts use the spending pace of
 the last days (SUPUESTOS → FINANZAS) and warn, never block, when it does
 not reach the next income date the user wrote down. GASTÉ on INICIO logs an
 expense with an amount and one tap on a category.
+
+The day's close (B6) takes under half a minute: mood and energy 1–5,
+minutes with people by the user's own categories (reference: today's
+minutes in apps the user classed as communication; the call log is not
+read) and the user's own yes/no question; after a "sí" the phrase the user
+wrote for next time is shown. No question, category or phrase is preset;
+no score, no reproach. Trends appear only after the minimum days
+(SUPUESTOS → CIERRE DEL DÍA), always with the number of days and
+"correlación no es causa".
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
