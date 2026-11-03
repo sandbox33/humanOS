@@ -447,7 +447,7 @@ class _CookedTab extends ConsumerWidget {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('EXPUESTO AL CALOR DEL TALLER'),
+                  title: const Text('EXPUESTO AL CALOR'),
                   value: row.heatExposed,
                   onChanged: (v) => repo.setBatchStorage(row.id, heatExposed: v),
                 ),

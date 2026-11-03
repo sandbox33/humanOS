@@ -1,9 +1,9 @@
 # CLAUDE.md — HumanOS v3
 
 Offline-first, single-user Android app (Flutter) for nutrition, Heavy Duty
-training, workshop heat/hydration, recovery telemetry (Xiaomi Smart Band via
-Health Connect) and habits. Owner: Abraham "Altair" Fuenmayor (welder,
-07:00–17:00 shift, 1 h lunch, trains after the shift).
+training, work heat/hydration, recovery telemetry (wrist band via Health
+Connect) and habits. One person per phone; the profile is entered in the
+app. The repository holds no personal data of anyone (see rule 10).
 
 Identifiers and comments in English. **All UI strings in Spanish (es-EC).**
 
@@ -14,8 +14,9 @@ Identifiers and comments in English. **All UI strings in Spanish (es-EC).**
 2. **GitHub Actions is the only build environment.** The owner does not
    program and has no local toolchain. Never install Flutter or the Android
    SDK in an agent session and never ask the owner to run commands. The
-   owner's only actions are creating the `KEYSTORE_PASSWORD` secret and
-   pressing "Run workflow". CI runs
+   owner's only actions are creating secrets (`KEYSTORE_PASSWORD`,
+   `KEYSTORE_ENC_B64`), pressing "Run workflow" and the manual phone
+   checklist. CI runs
    `flutter create --org com.altair --project-name humanos --platforms android .`
    (it only adds missing files), codegen, tests and the build.
 3. This file holds the directives, tree, checkpoints and acceptance criteria.
@@ -34,6 +35,22 @@ Identifiers and comments in English. **All UI strings in Spanish (es-EC).**
 8. Use the latest stable versions resolved by `pub`; never pin from memory.
    Commit `pubspec.lock` files.
 9. Ask before any destructive or irreversible action not listed here.
+10. **No personal data** in README, commits, issues, releases, table names,
+    code or example texts: no names, schedules, trades, rates, weights or
+    coordinates. Examples live only in `test/` and are invented.
+11. **Money in integer cents, time in integer minutes.** No `double` for
+    money in storage.
+12. **Nothing static.** Zones, goals, work templates, expense categories and
+    thresholds are user data (create / edit / pause / archive / complete).
+13. **Audit before change, root cause over patches, one phase per PR** in the
+    order of the adjustments brief. Every data migration keeps a verified
+    copy first. What can only be checked on the phone (Keystore, alarms,
+    on-device model) goes to the manual checklist; nothing is "done" without
+    it.
+14. **Signing key:** never rotate it (another signature forces an uninstall
+    and the data is lost). It lives encrypted in the `KEYSTORE_ENC_B64`
+    secret; `clave.yml` moves it from the old public release and deletes
+    that release only after comparing certificate fingerprints.
 
 ## Tree
 
@@ -76,7 +93,15 @@ humanOS/
   it to app storage on first launch and whenever the bundled `.sha256`
   changes (which also covers a `PRAGMA user_version` change).
 * `user.sqlite` — read-write, drift, migrations only, never overwritten
-  except by a user-initiated encrypted import.
+  except by a user-initiated encrypted import. Encrypted at rest with
+  SQLite3MultipleCiphers (`hooks: user_defines: sqlite3: source: sqlite3mc`);
+  `PRAGMA hexkey` is the first statement of every connection. The 32-byte key
+  is generated on first launch and kept in the Android Keystore
+  (flutter_secure_storage). A plain v3.0 file is encrypted on a copy, the row
+  count of every table is compared, an encrypted copy goes to `backups/`, and
+  only then the plain file is replaced (`lib/data/db_open.dart`). An
+  encrypted file without its key is moved aside, never deleted.
+  `reference.sqlite` (public data) stays unencrypted.
 
 ### Documented extensions to the v3 DDL
 
@@ -91,7 +116,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `habits.source` | nullable column | auto-filled habits (protein, weigh-in, sleep…) |
 | user `sessions.mode` | `normal/deload/retest` | deload week and re-test must be remembered |
 | user `food_user_flags` | `user_excluded`, `user_trigger_reflux` | §5.2 user flags cannot live in the read-only DB |
-| user `app_settings` | key/value | accent colour, toggles, onboarding state, day-1 weight pre-fill (65 kg, editable, not a constant) |
+| user `app_settings` | key/value | accent colour, toggles, onboarding state |
 | user `daily_logs.intake_complete` | bool, default false | "DÍA COMPLETO": only confirmed days feed the adaptive TDEE |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles

@@ -195,7 +195,7 @@ DayEnergy dailyEnergyTarget({
         confidence: Confidence.baja,
         noteEs:
             'Sin jornada registrada hoy: objetivo provisional de día de '
-            'taller. Marca el esfuerzo del turno para ajustarlo.',
+            'trabajo. Marca el esfuerzo del turno para ajustarlo.',
       );
     case DayType.offDay:
       final value = bmr * palOffday + surplusKcal;

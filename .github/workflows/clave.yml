@@ -1,0 +1,129 @@
+name: clave
+
+# Moves the signing key from the public release "signing-key" to GitHub
+# Secrets, without rotating it (another signature would force an uninstall
+# and the data would be lost).
+#
+# 1. Run with "exportar": the job summary shows the key *encrypted* with
+#    KEYSTORE_PASSWORD, in base64 (the same bytes the public release already
+#    has). Copy it into a new secret named KEYSTORE_ENC_B64.
+# 2. Run android once: the build must say "Clave desde el secret".
+# 3. Run with "verificar-y-borrar-release": it checks that the secret holds
+#    exactly the same certificate as the release and only then deletes the
+#    release. Afterwards delete the run of step 1 (Actions → run → ⋯ →
+#    Delete workflow run) so the encrypted text does not stay visible.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'exportar | verificar-y-borrar-release'
+        required: true
+        type: choice
+        options:
+          - exportar
+          - verificar-y-borrar-release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android
+  cancel-in-progress: false
+
+jobs:
+  clave:
+    name: Clave de firma
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEYSTORE_ENC_B64: ${{ secrets.KEYSTORE_ENC_B64 }}
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Comprobar el secret de la contraseña
+        run: |
+          if [ -z "${KEYSTORE_PASSWORD}" ]; then
+            echo "::error::Falta el secret KEYSTORE_PASSWORD."
+            exit 1
+          fi
+
+      - name: Exportar la clave cifrada
+        if: inputs.accion == 'exportar'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/k"; mkdir -p "$dir"; chmod 700 "$dir"
+          if ! gh release download signing-key --pattern upload.jks.enc --dir "$dir" --clobber; then
+            echo "::error::No existe la release signing-key. Si ya creaste KEYSTORE_ENC_B64, no hace falta exportar."
+            exit 1
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$dir/upload.jks.enc" -out "$dir/upload.jks" -pass env:KEYSTORE_PASSWORD || {
+              echo "::error::KEYSTORE_PASSWORD no abre la clave de la release."
+              exit 1
+            }
+          fp=$(keytool -list -v -keystore "$dir/upload.jks" -alias upload -storepass "$KEYSTORE_PASSWORD" \
+            | awk -F': ' '/SHA256:/ {print $2; exit}')
+          shred -u "$dir/upload.jks"
+          {
+            echo "## Clave de firma (cifrada) para el secret"
+            echo
+            echo "1. Copia TODO el bloque de abajo."
+            echo "2. Settings → Secrets and variables → Actions → **Secrets** → New repository secret."
+            echo "3. Name: \`KEYSTORE_ENC_B64\` · Secret: pega el bloque."
+            echo "4. Ejecuta **android** una vez y luego este workflow con **verificar-y-borrar-release**."
+            echo
+            echo "El texto está cifrado con tu KEYSTORE_PASSWORD: sin ella no sirve (es lo mismo que ya tenía la release pública)."
+            echo "Huella del certificado: \`$fp\`"
+            echo
+            echo '```'
+            base64 -w 76 "$dir/upload.jks.enc"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$dir/upload.jks.enc"
+
+      - name: Verificar el secret y borrar la release pública
+        if: inputs.accion == 'verificar-y-borrar-release'
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_ENC_B64}" ]; then
+            echo "::error::Falta el secret KEYSTORE_ENC_B64: ejecuta primero 'exportar' y créalo."
+            exit 1
+          fi
+          dir="$RUNNER_TEMP/k"; mkdir -p "$dir"; chmod 700 "$dir"
+          printf '%s' "$KEYSTORE_ENC_B64" | tr -d ' \r\n\t' | base64 -d > "$dir/secret.jks.enc"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$dir/secret.jks.enc" -out "$dir/secret.jks" -pass env:KEYSTORE_PASSWORD || {
+              echo "::error::El secret KEYSTORE_ENC_B64 no se descifra con KEYSTORE_PASSWORD. No se borró nada."
+              exit 1
+            }
+          fp_secret=$(keytool -list -v -keystore "$dir/secret.jks" -alias upload -storepass "$KEYSTORE_PASSWORD" \
+            | awk -F': ' '/SHA256:/ {print $2; exit}')
+          shred -u "$dir/secret.jks"
+          if ! gh release view signing-key >/dev/null 2>&1; then
+            echo "La release signing-key ya no existe. Huella del secret: $fp_secret" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          gh release download signing-key --pattern upload.jks.enc --dir "$dir" --clobber
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in "$dir/upload.jks.enc" -out "$dir/release.jks" -pass env:KEYSTORE_PASSWORD
+          fp_release=$(keytool -list -v -keystore "$dir/release.jks" -alias upload -storepass "$KEYSTORE_PASSWORD" \
+            | awk -F': ' '/SHA256:/ {print $2; exit}')
+          shred -u "$dir/release.jks"
+          if [ -z "$fp_secret" ] || [ "$fp_secret" != "$fp_release" ]; then
+            echo "::error::El secret no tiene el mismo certificado que la release. No se borró nada."
+            exit 1
+          fi
+          gh release delete signing-key --yes --cleanup-tag
+          {
+            echo "## Listo"
+            echo
+            echo "El secret KEYSTORE_ENC_B64 tiene la misma clave (huella \`$fp_secret\`)."
+            echo "La release pública **signing-key** fue borrada."
+            echo "Borra ahora la ejecución de 'exportar' (Actions → la ejecución → ⋯ → Delete workflow run)."
+          } >> "$GITHUB_STEP_SUMMARY"

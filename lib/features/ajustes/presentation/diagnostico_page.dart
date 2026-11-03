@@ -9,6 +9,7 @@ import '../../../app/widgets/format.dart';
 import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/status_widgets.dart';
 import '../../../app/widgets/terminal_panel.dart';
+import '../../../data/db_open.dart';
 import '../../../data/settings.dart';
 import '../../../data/user_db.dart';
 import '../../../services/services.dart';
@@ -60,10 +61,27 @@ class DiagnosticoPage extends ConsumerWidget {
       if (current == null || start.isAfter(current)) lastByKind[kind] = start;
     }
     final theme = Theme.of(context);
+    final security = ref.watch(dbSecurityProvider);
     return HosPage(
       title: 'DIAGNÓSTICO',
       subtitle: 'Qué datos llegan de verdad',
       body: PanelList(children: [
+        TerminalPanel(
+          label: 'Cifrado de tus datos',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DataLine('Base del usuario', security.encrypted ? 'cifrada' : 'SIN CIFRAR'),
+              if (security.encryptedThisLaunch)
+                Note('Se cifró en este arranque; se compararon las filas de '
+                    '${security.verifiedTables} tablas antes de borrar la versión sin cifrar.'),
+              if (security.quarantinedPath != null)
+                const Note('Había una base cifrada sin su clave: se apartó (no se borró) y se '
+                    'empezó una nueva. Restaura tu copia cifrada para recuperar tus datos.'),
+              const Note(dbKeyRiskEs),
+            ],
+          ),
+        ),
         TerminalPanel(
           label: 'Health Connect',
           child: Column(

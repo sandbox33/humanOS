@@ -1,8 +1,11 @@
 name: android
 
 # The only build the owner runs: Actions → android → Run workflow.
-# Needs one secret, KEYSTORE_PASSWORD. The upload key is created on the first
-# run, stored only encrypted (release "signing-key"), and reused afterwards.
+# Secrets: KEYSTORE_PASSWORD and KEYSTORE_ENC_B64 (the upload key, encrypted
+# with that password, base64). While KEYSTORE_ENC_B64 does not exist the key
+# still comes from the old release "signing-key"; the "clave" workflow moves
+# it to the secret and then deletes that release. The key is never rotated:
+# another signature would force an uninstall and the data would be lost.
 on:
   workflow_dispatch:
 
@@ -21,6 +24,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEYSTORE_ENC_B64: ${{ secrets.KEYSTORE_ENC_B64 }}
     steps:
       - name: Comprobar el secret
         run: |
@@ -77,31 +81,44 @@ jobs:
           key_dir="$RUNNER_TEMP/signing"
           mkdir -p "$key_dir"
           chmod 700 "$key_dir"
-          if gh release view signing-key >/dev/null 2>&1 && \
-             gh release download signing-key --pattern upload.jks.enc --dir "$key_dir" --clobber; then
+          decrypt() {
             openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
               -in "$key_dir/upload.jks.enc" -out "$key_dir/upload.jks" -pass env:KEYSTORE_PASSWORD || {
                 echo "::error::No se pudo descifrar la clave: KEYSTORE_PASSWORD no es el mismo de la primera compilación."
                 exit 1
               }
+          }
+          if [ -n "${KEYSTORE_ENC_B64}" ]; then
+            echo "Clave desde el secret KEYSTORE_ENC_B64."
+            printf '%s' "$KEYSTORE_ENC_B64" | tr -d ' \r\n\t' | base64 -d > "$key_dir/upload.jks.enc"
+            decrypt
+          elif gh release view signing-key >/dev/null 2>&1 && \
+               gh release download signing-key --pattern upload.jks.enc --dir "$key_dir" --clobber; then
+            echo "::warning::La clave todavía sale de la release pública signing-key. Ejecuta Actions → clave → 'exportar' y crea el secret KEYSTORE_ENC_B64."
+            decrypt
           else
             echo "Primera compilación: se crea la clave de firma."
             keytool -genkeypair -keystore "$key_dir/upload.jks" -keyalg RSA -keysize 2048 -validity 10000 \
               -alias upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" \
-              -dname "CN=Altair, O=HumanOS" >/dev/null
+              -dname "CN=HumanOS, O=HumanOS" >/dev/null
             openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
               -in "$key_dir/upload.jks" -out "$key_dir/upload.jks.enc" -pass env:KEYSTORE_PASSWORD
+            # Kept encrypted until it is moved to the secret with the "clave"
+            # workflow. Never overwritten: without --clobber the upload fails.
             if gh release view signing-key >/dev/null 2>&1; then
-              # Never overwrite: without --clobber the upload fails if it exists.
               gh release upload signing-key "$key_dir/upload.jks.enc"
             else
               gh release create signing-key "$key_dir/upload.jks.enc" \
                 --target "${{ github.sha }}" \
                 --title "Clave de firma (cifrada)" \
-                --notes "Clave de firma de HumanOS cifrada con AES-256 (PBKDF2, 600000 iteraciones). Sin KEYSTORE_PASSWORD no sirve. No la borres: sin ella las próximas versiones no se podrán instalar encima."
+                --notes "Clave de firma de HumanOS cifrada con AES-256 (PBKDF2, 600000 iteraciones). Muévela al secret KEYSTORE_ENC_B64 con el workflow 'clave'."
             fi
-            rm -f "$key_dir/upload.jks.enc"
           fi
+          rm -f "$key_dir/upload.jks.enc"
+          fingerprint=$(keytool -list -v -keystore "$key_dir/upload.jks" -alias upload \
+            -storepass "$KEYSTORE_PASSWORD" | awk -F': ' '/SHA256:/ {print $2; exit}')
+          echo "Huella SHA-256 del certificado: $fingerprint"
+          echo "SIGNING_FINGERPRINT=$fingerprint" >> "$GITHUB_ENV"
           echo "KEYSTORE_PATH=$key_dir/upload.jks" >> "$GITHUB_ENV"
 
       - run: flutter pub get
@@ -131,6 +148,8 @@ jobs:
             echo "En **Releases → $tag** descarga e instala **app-arm64-v8a-release.apk**."
             echo
             echo "Si tenías HumanOS v1, desinstálala antes (misma app, otra firma)."
+            echo
+            echo "Huella del certificado de firma (debe ser siempre la misma): \`${SIGNING_FINGERPRINT:-}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Borrar la clave sin cifrar

@@ -17,6 +17,7 @@ void main() {
   setUp(() async {
     db = memoryUserDb();
     await seedIfNeeded(db);
+    await insertTestProfile(db);
   });
 
   tearDown(() => db.close());
