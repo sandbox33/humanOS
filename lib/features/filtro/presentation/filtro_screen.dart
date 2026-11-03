@@ -65,24 +65,10 @@ class _ListPanel extends ConsumerWidget {
   final DnsList list;
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
     final text = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(list == DnsList.bloquear ? 'BLOQUEAR DOMINIO' : 'PERMITIR DOMINIO'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          decoration: const InputDecoration(labelText: 'Dominio o dirección del sitio'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCELAR')),
-          TextButton(onPressed: () => Navigator.of(context).pop(controller.text), child: const Text('AGREGAR')),
-        ],
-      ),
+      builder: (_) => _DomainDialog(title: list == DnsList.bloquear ? 'BLOQUEAR DOMINIO' : 'PERMITIR DOMINIO'),
     );
-    controller.dispose();
     if (text == null || text.trim().isEmpty) return;
     final domain = normalizeDomain(text);
     if (domain == null) {
@@ -177,4 +163,39 @@ class _GuidePanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Asks for one domain. It owns its text field, which lives as long as the
+/// dialog (also during its closing frames).
+class _DomainDialog extends StatefulWidget {
+  const _DomainDialog({required this.title});
+  final String title;
+
+  @override
+  State<_DomainDialog> createState() => _DomainDialogState();
+}
+
+class _DomainDialogState extends State<_DomainDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.title),
+        content: TextField(
+          controller: _controller,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(labelText: 'Dominio o dirección del sitio'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CANCELAR')),
+          TextButton(onPressed: () => Navigator.of(context).pop(_controller.text), child: const Text('AGREGAR')),
+        ],
+      );
 }
