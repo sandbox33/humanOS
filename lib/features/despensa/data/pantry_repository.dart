@@ -33,7 +33,7 @@ class PantryRepository {
     int? foodId,
     String? barcode,
     required double grams,
-    double? priceUsdPerKg,
+    int? priceCentsPerKg,
     String? purchasedOn,
     String? expiresOn,
     int? purchaseId,
@@ -42,17 +42,17 @@ class PantryRepository {
             gramsRemaining: grams,
             foodId: Value(foodId),
             barcode: Value(barcode),
-            priceUsdPerKg: Value(priceUsdPerKg),
+            priceCentsPerKg: Value(priceCentsPerKg),
             purchasedOn: Value(purchasedOn),
             expiresOn: Value(expiresOn),
             purchaseId: Value(purchaseId),
           ));
 
-  Future<void> updateItem(PantryItemRow item, {double? grams, double? price, String? expiresOn}) =>
+  Future<void> updateItem(PantryItemRow item, {double? grams, int? priceCentsPerKg, String? expiresOn}) =>
       (_db.update(_db.pantryItems)..where((t) => t.id.equals(item.id))).write(
         PantryItemsCompanion(
           gramsRemaining: grams == null ? const Value.absent() : Value(grams < 0 ? 0 : grams),
-          priceUsdPerKg: price == null ? const Value.absent() : Value(price),
+          priceCentsPerKg: priceCentsPerKg == null ? const Value.absent() : Value(priceCentsPerKg),
           expiresOn: expiresOn == null ? const Value.absent() : Value(expiresOn),
         ),
       );
@@ -68,13 +68,13 @@ class PantryRepository {
   Future<int> addPurchase({
     required String date,
     String? store,
-    double? totalUsd,
+    int? totalCents,
     String? rawText,
   }) =>
       _db.into(_db.purchases).insert(PurchasesCompanion.insert(
             date: date,
             store: Value(store),
-            totalUsd: Value(totalUsd),
+            totalCents: Value(totalCents),
             rawText: Value(rawText),
           ));
 

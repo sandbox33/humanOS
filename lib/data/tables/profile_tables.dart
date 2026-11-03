@@ -3,7 +3,8 @@
 
 import 'package:drift/drift.dart';
 
-/// Single-row profile (`id = 1`).
+/// Single-row profile (`id = 1`), entered by the user. Work hours live in
+/// the user's work templates, not here.
 @DataClassName('ProfileRow')
 class Profile extends Table {
   IntColumn get id => integer().check(id.equals(1))();
@@ -12,9 +13,6 @@ class Profile extends Table {
   RealColumn get heightCm => real()();
   TextColumn get sex => text()();
   RealColumn get targetWeightKg => real()();
-  TextColumn get shiftStart => text().withDefault(const Constant('07:00'))();
-  TextColumn get shiftEnd => text().withDefault(const Constant('17:00'))();
-  TextColumn get lunchStart => text().withDefault(const Constant('12:00'))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -54,12 +52,9 @@ class DailyLogs extends Table {
   TextColumn get workEffort => text()
       .nullable()
       .check(workEffort.isIn(const ['OFF', 'LOW', 'MEDIUM', 'HIGH']))();
-  RealColumn get heatHours => real().nullable()();
+  /// Minutes of heat exposure declared for the day.
+  IntColumn get heatMinutes => integer().nullable().check(heatMinutes.isBiggerOrEqualValue(0))();
   BoolColumn get ppeFull => boolean().nullable()();
-  RealColumn get sweatPreKg => real().nullable()();
-  RealColumn get sweatPostKg => real().nullable()();
-  RealColumn get fluidsL => real().nullable()();
-  RealColumn get urineL => real().nullable()();
   IntColumn get screenMinutes => integer().nullable()();
   BoolColumn get sober => boolean().nullable()();
   IntColumn get sleepSubjective => integer()
@@ -70,6 +65,18 @@ class DailyLogs extends Table {
   /// these days count toward the adaptive TDEE.
   BoolColumn get intakeComplete =>
       boolean().withDefault(const Constant(false))();
+
+  // Schema v2: 1-tap after work and the morning check-in.
+  TextColumn get sweatFeel =>
+      text().nullable().check(sweatFeel.isIn(const ['poco', 'normal', 'mucho']))();
+  IntColumn get effortFeel => integer().nullable().check(effortFeel.isBetweenValues(1, 5))();
+
+  /// Morning check-in 1–5 (how the user woke up).
+  IntColumn get mood => integer().nullable().check(mood.isBetweenValues(1, 5))();
+
+  /// Thermos reminders acknowledged (before work, in the break).
+  BoolColumn get thermoPre => boolean().nullable()();
+  BoolColumn get thermoBreak => boolean().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {date};

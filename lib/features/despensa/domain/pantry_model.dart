@@ -7,7 +7,6 @@ import '../../../data/nutrition_resolver.dart';
 import '../../../data/user_db.dart';
 import '../../estado/domain/targets.dart';
 import '../../registro/domain/intake.dart';
-import '../../turno/domain/hydration.dart';
 import '../data/pantry_repository.dart';
 
 final pantryStockProvider = StreamProvider<List<PantryItemRow>>(
@@ -68,7 +67,7 @@ PantryCandidate candidateOf(StockView s) {
     kcalPer100g: p.per100g(NutrientKey.energy),
     proteinPer100g: p.per100g(NutrientKey.protein),
     nrf93Per100kcal: s.food.properties?.nrf93Per100kcal,
-    priceUsdPerKg: s.row.priceUsdPerKg,
+    priceCentsPerKg: s.row.priceCentsPerKg,
     diaas: s.food.properties?.diaas,
     nova: s.food.nova,
     userExcluded: s.food.flags.excluded,
@@ -93,12 +92,11 @@ DietFood dietFoodOf(StockView s) {
     return v == null ? null : v / 100;
   }
 
-  final price = s.row.priceUsdPerKg;
   return DietFood(
     key: s.key,
     name: s.food.name,
     maxGrams: s.row.gramsRemaining,
-    costUsdPerG: price == null ? null : price / 1000,
+    priceCentsPerKg: s.row.priceCentsPerKg,
     kcalPerG: perGram(NutrientKey.energy),
     proteinPerG: perGram(NutrientKey.protein),
     sodiumMgPerG: perGram(NutrientKey.sodium),
@@ -107,7 +105,8 @@ DietFood dietFoodOf(StockView s) {
   );
 }
 
-/// Cheapest plan for what is missing today (or the whole day).
+/// Plan for what is missing today (or the whole day): the cheapest when
+/// every food has a price, the best-scored otherwise.
 DietPlan planForToday(WidgetRef ref, {required bool wholeDay}) {
   final a = ref.read(currentAssumptionsProvider);
   final status = ref.read(energyStatusProvider);
@@ -119,7 +118,7 @@ DietPlan planForToday(WidgetRef ref, {required bool wholeDay}) {
     targets: DietTargets(
       kcalMin: kcal,
       proteinMinG: protein,
-      sodiumMaxMg: a[A.sodiumLimitMg] + ref.read(sweatSodiumTodayProvider),
+      sodiumMaxMg: a[A.sodiumLimitMg],
     ),
     params: DietParams.fromAssumptions(a),
   );

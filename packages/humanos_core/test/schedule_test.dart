@@ -4,10 +4,11 @@ import 'package:test/test.dart';
 void main() {
   final a = Assumptions.defaults();
   final p = ScheduleParams.fromAssumptions(a);
+  // Invented work window for the tests.
   final shift = ShiftConfig.fromClock(
-    shiftStart: '07:00',
-    shiftEnd: '17:00',
-    lunchStart: '12:00',
+    shiftStart: '06:30',
+    shiftEnd: '16:30',
+    lunchStart: '11:30',
   );
 
   test('workday with training has six blocks in order', () {
@@ -26,15 +27,15 @@ void main() {
       MealBlock.dinner,
     ]);
     expect(slots.map((s) => s.clock), [
-      '06:15',
-      '09:30',
-      '12:00',
-      '15:00',
-      '18:30',
-      '19:45',
+      '05:45',
+      '09:00',
+      '11:30',
+      '14:30',
+      '18:00',
+      '19:15',
     ]);
     expect(slots.fold(0.0, (s, x) => s + x.kcalShare), closeTo(1, 1e-9));
-    expect(slots.first.contextEs, 'Antes del turno');
+    expect(slots.first.contextEs, 'Antes del trabajo');
   });
 
   test('without training the post-workout share is redistributed', () {
@@ -46,7 +47,26 @@ void main() {
     );
     expect(slots.any((s) => s.block == MealBlock.postWorkout), isFalse);
     expect(slots.fold(0.0, (s, x) => s + x.kcalShare), closeTo(1, 1e-9));
-    expect(slots.last.clock, '19:30');
+    expect(slots.last.clock, '19:00');
+  });
+
+  test("the work's own break replaces the lunch-duration assumption", () {
+    final ownBreak = ShiftConfig.fromClock(
+      shiftStart: '06:30',
+      shiftEnd: '16:30',
+      lunchStart: '11:30',
+      lunchMinutes: 30,
+    );
+    final slots = mealSchedule(
+      shift: ownBreak,
+      trainingDay: false,
+      workday: true,
+      params: p,
+    );
+    expect(
+      slots.firstWhere((s) => s.block == MealBlock.afternoon).clock,
+      '14:15',
+    );
   });
 
   test('shift length', () {

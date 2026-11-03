@@ -1,19 +1,23 @@
 import 'package:drift/drift.dart';
 
+import 'migrations/v1_to_v2.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
 import 'tables/profile_tables.dart';
 import 'tables/training_tables.dart';
+import 'tables/work_tables.dart';
 
 export 'tables/food_tables.dart';
 export 'tables/habit_tables.dart';
 export 'tables/profile_tables.dart';
 export 'tables/training_tables.dart';
+export 'tables/work_tables.dart';
 
 part 'user_db.g.dart';
 
-/// The read-write user database (`user.sqlite`). Never overwritten except
-/// by a user-initiated encrypted import.
+/// The read-write user database (`user.sqlite`, encrypted). Never
+/// overwritten except by a user-initiated restore. Migrations go step by
+/// step; `deleteAllTables` is never used.
 @DriftDatabase(tables: [
   Profile,
   AssumptionRows,
@@ -38,16 +42,31 @@ part 'user_db.g.dart';
   HabitLogs,
   StreakState,
   Attributes,
+  // Schema v2
+  WorkEntries,
+  WorkTemplates,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
+  /// Bump only together with a new migration step and a new file in
+  /// `drift_schemas/`.
+  static const currentSchema = 2;
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => currentSchema;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          for (var version = from; version < to; version++) {
+            switch (version) {
+              case 1:
+                await migrateV1ToV2(m, this);
+            }
+          }
+        },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },
@@ -78,5 +97,7 @@ class UserDb extends _$UserDb {
         habitLogs,
         streakState,
         attributes,
+        workTemplates,
+        workEntries,
       ];
 }

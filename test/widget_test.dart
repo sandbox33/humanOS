@@ -35,7 +35,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    for (final label in ['ESTADO', 'REGISTRO', 'HEAVY', 'TURNO', 'MÁS']) {
+    for (final label in ['ESTADO', 'REGISTRO', 'HEAVY', 'TRABAJO', 'MÁS']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
     expect(find.text('PESARME'), findsWidgets);

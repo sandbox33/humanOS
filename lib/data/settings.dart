@@ -20,7 +20,10 @@ class AppSettingsState {
     this.eventFeedback = true,
     this.crtHeaders = true,
     this.mealReminders = true,
-    this.hydrationNudges = true,
+    this.hydrationReminders = true,
+    this.dayCloseTime,
+    this.overtimeDayMin,
+    this.overtimeWeekMin,
     this.sessionReminder = true,
     this.fiberFirst = false,
     this.healthConnectPrompted = false,
@@ -31,7 +34,10 @@ class AppSettingsState {
         eventFeedback: map[SettingKey.eventFeedback] != '0',
         crtHeaders: map[SettingKey.crtHeaders] != '0',
         mealReminders: map[SettingKey.mealReminders] != '0',
-        hydrationNudges: map[SettingKey.hydrationNudges] != '0',
+        hydrationReminders: map[SettingKey.hydrationReminders] != '0',
+        dayCloseTime: map[SettingKey.dayCloseTime],
+        overtimeDayMin: int.tryParse(map[SettingKey.overtimeDayMin] ?? ''),
+        overtimeWeekMin: int.tryParse(map[SettingKey.overtimeWeekMin] ?? ''),
         sessionReminder: map[SettingKey.sessionReminder] != '0',
         fiberFirst: map[SettingKey.fiberFirst] == '1',
         healthConnectPrompted: map[SettingKey.healthConnectPrompted] == '1',
@@ -45,10 +51,18 @@ class AppSettingsState {
   /// Static scanlines on headers; turned off automatically if frames lag.
   final bool crtHeaders;
   final bool mealReminders;
-  final bool hydrationNudges;
+  /// "Llena el termo" before planned work with heat and at its break.
+  final bool hydrationReminders;
+
+  /// Optional day-close reminder (`HH:MM`), off when null.
+  final String? dayCloseTime;
+
+  /// Optional overtime thresholds in minutes (no default rule).
+  final int? overtimeDayMin;
+  final int? overtimeWeekMin;
   final bool sessionReminder;
 
-  /// "Almuerzo antes del turno de tarde": fibre-first sequencing. Off by
+  /// Fibre-first sequencing at lunch. Off by
   /// default because it lowers intake in a surplus phase.
   final bool fiberFirst;
   final bool healthConnectPrompted;
@@ -59,7 +73,10 @@ abstract final class SettingKey {
   static const eventFeedback = 'event_feedback';
   static const crtHeaders = 'crt_headers';
   static const mealReminders = 'meal_reminders';
-  static const hydrationNudges = 'hydration_nudges';
+  static const hydrationReminders = 'hydration_reminders';
+  static const dayCloseTime = 'day_close_time';
+  static const overtimeDayMin = 'overtime_day_min';
+  static const overtimeWeekMin = 'overtime_week_min';
   static const sessionReminder = 'session_reminder';
   static const fiberFirst = 'fiber_first';
   static const healthConnectPrompted = 'health_connect_prompted';
@@ -69,7 +86,7 @@ abstract final class SettingKey {
   static const bleDeviceId = 'ble_device_id';
   static const healthLastSync = 'health_last_sync';
 
-  /// Value shown in the first weigh-in dialog (seeded, editable there).
+  /// Value shown in the first weigh-in dialog when there is no weight yet.
   static const weightPrefill = 'weight_prefill_kg';
   static const healthGranted = 'health_granted';
   static const notificationsAsked = 'notifications_asked';

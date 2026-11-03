@@ -17,7 +17,8 @@ import '../features/heavy_duty/domain/training_plan.dart';
 import '../features/heavy_duty/presentation/heavy_duty_screen.dart';
 import '../features/indice/presentation/indice_screen.dart';
 import '../features/registro/presentation/registro_screen.dart';
-import '../features/turno/presentation/turno_screen.dart';
+import '../features/trabajo/domain/work_model.dart';
+import '../features/trabajo/presentation/trabajo_screen.dart';
 import '../services/services.dart';
 import 'chores.dart';
 import 'providers.dart';
@@ -35,7 +36,7 @@ class ShellTab extends Notifier<int> {
 
 final shellTabProvider = NotifierProvider<ShellTab, int>(ShellTab.new);
 
-/// Bottom navigation (ESTADO · REGISTRO · HEAVY · TURNO · MÁS) and the
+/// Bottom navigation (ESTADO · REGISTRO · HEAVY · TRABAJO · MÁS) and the
 /// background chores: Health Connect and screen-time reads, automatic
 /// habit values, streak/attribute history and reminders.
 class AppShell extends ConsumerStatefulWidget {
@@ -148,8 +149,13 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
         (previous, next) {
       if (previous != next) unawaited(rescheduleReminders(ref));
     });
-    ref.listen(
-        profileProvider.select((p) => (p.value?.shiftStart, p.value?.shiftEnd, p.value?.lunchStart)),
+    ref.listen(workTemplatesProvider, (previous, next) {
+      if (previous?.value != next.value) unawaited(rescheduleReminders(ref));
+    });
+    ref.listen(inProgressEntryProvider.select((r) => r?.row.id), (previous, next) {
+      if (previous != next) unawaited(rescheduleReminders(ref));
+    });
+    ref.listen(settingsProvider.select((s) => (s.hydrationReminders, s.dayCloseTime)),
         (previous, next) {
       if (previous != next) unawaited(rescheduleReminders(ref));
     });
@@ -161,7 +167,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
           EstadoScreen(),
           RegistroScreen(),
           HeavyDutyScreen(),
-          TurnoScreen(),
+          TrabajoScreen(),
           MasScreen(),
         ],
       ),
@@ -172,7 +178,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
           NavigationDestination(icon: Icon(Icons.monitor_heart_outlined), label: 'ESTADO'),
           NavigationDestination(icon: Icon(Icons.restaurant_outlined), label: 'REGISTRO'),
           NavigationDestination(icon: Icon(Icons.fitness_center), label: 'HEAVY'),
-          NavigationDestination(icon: Icon(Icons.local_fire_department_outlined), label: 'TURNO'),
+          NavigationDestination(icon: Icon(Icons.work_outline), label: 'TRABAJO'),
           NavigationDestination(icon: Icon(Icons.more_horiz), label: 'MÁS'),
         ],
       ),

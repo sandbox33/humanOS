@@ -9,7 +9,8 @@ abstract final class HabitSource {
   static const weighIn = 'weigh_in';
   static const sober = 'sober';
   static const screenMinutes = 'screen_min';
-  static const hydrationPct = 'hydration_pct';
+  /// Thermos reminders acknowledged on a day with heat (0–2).
+  static const hydrationAck = 'hydration_ack';
   static const big3 = 'big3';
   static const sleepHours = 'sleep_h';
 }
@@ -64,8 +65,8 @@ Future<void> seedIfNeeded(UserDb db) async {
             weight: 2,
             isMinimum: false,
             metric: const Value('min'),
-            target: const Value(80),
-            source: const Value(HabitSource.hydrationPct),
+            target: const Value(2),
+            source: const Value(HabitSource.hydrationAck),
           ),
           HabitsCompanion.insert(
             alias: 'B3',

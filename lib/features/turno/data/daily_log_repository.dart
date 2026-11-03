@@ -2,8 +2,8 @@ import 'package:drift/drift.dart';
 
 import '../../../data/user_db.dart';
 
-/// `daily_logs`: shift effort, heat, fluids, sweat test, screen time,
-/// sobriety, subjective sleep and the "día completo" confirmation.
+/// `daily_logs`: effort, heat minutes, sweat feel, thermos, mood, screen
+/// time, sobriety, subjective sleep and the "día completo" confirmation.
 class DailyLogRepository {
   DailyLogRepository(this._db);
   final UserDb _db;
@@ -33,22 +33,5 @@ class DailyLogRepository {
       }
       await (_db.update(_db.dailyLogs)..where((t) => t.date.equals(date))).write(fields);
     });
-  }
-
-  /// Latest valid sweat-test rate (L/h), searching backwards.
-  Future<({double rate, String date})?> latestSweatRate() async {
-    final rows = await (_db.select(_db.dailyLogs)
-          ..where((t) =>
-              t.sweatPreKg.isNotNull() & t.sweatPostKg.isNotNull() & t.heatHours.isNotNull())
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(10))
-        .get();
-    for (final r in rows) {
-      final hours = r.heatHours ?? 0;
-      if (hours <= 0) continue;
-      final rate = (r.sweatPreKg! - r.sweatPostKg! + (r.fluidsL ?? 0) - (r.urineL ?? 0)) / hours;
-      if (rate > 0) return (rate: rate, date: r.date);
-    }
-    return null;
   }
 }

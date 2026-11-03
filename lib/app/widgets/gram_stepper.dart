@@ -95,3 +95,27 @@ Future<double?> askNumber(
   if (text == null || text.isEmpty) return null;
   return double.tryParse(text.replaceAll(',', '.'));
 }
+
+/// Asks for an amount of money and returns integer cents ("12,50" → 1250).
+/// Null when cancelled, empty or not a valid amount (the user is told).
+Future<int?> askCents(
+  BuildContext context, {
+  required String title,
+  int? initial,
+  String unit = 'USD',
+}) async {
+  final text = await askText(
+    context,
+    title: title,
+    initial: initial == null ? null : formatCents(initial, withCurrency: false),
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    suffix: unit,
+  );
+  if (text == null || text.trim().isEmpty || !context.mounted) return null;
+  final cents = parseCents(text);
+  if (cents == null || cents < 0) {
+    toast(context, 'Revisa el monto: usa números como 12,50.');
+    return null;
+  }
+  return cents;
+}

@@ -11,7 +11,7 @@ library;
 enum AssumptionGroup {
   energia('ENERGÍA'),
   macros('MACRONUTRIENTES'),
-  hidratacion('HIDRATACIÓN Y SODIO'),
+  hidratacion('HIDRATACIÓN'),
   recuperacion('RECUPERACIÓN'),
   entrenamiento('HEAVY DUTY'),
   despensa('DESPENSA Y PLAN'),
@@ -19,7 +19,8 @@ enum AssumptionGroup {
   interacciones('INTERACCIONES'),
   seguridad('SEGURIDAD ALIMENTARIA'),
   horario('HORARIO DE COMIDAS'),
-  atributos('ATRIBUTOS');
+  atributos('ATRIBUTOS'),
+  avisos('AVISOS');
 
   const AssumptionGroup(this.labelEs);
   final String labelEs;
@@ -81,15 +82,15 @@ abstract final class A {
   static const proteinPlanTolerance = 'protein_plan_tolerance';
   static const fatKcalFraction = 'fat_kcal_fraction';
   // Hydration
-  static const sweatReplaceMinFrac = 'sweat_replace_min_frac';
-  static const sweatReplaceMaxFrac = 'sweat_replace_max_frac';
   static const fluidCapLPerH = 'fluid_cap_l_per_h';
   static const heatBolusL = 'heat_bolus_l';
+  static const sweatFeelPocoFactor = 'sweat_feel_poco_factor';
+  static const sweatFeelNormalFactor = 'sweat_feel_normal_factor';
+  static const sweatFeelMuchoFactor = 'sweat_feel_mucho_factor';
+  static const sweatFeelDays = 'sweat_feel_days';
+  static const hydrationPreWorkLeadMin = 'hydration_pre_work_lead_min';
   static const heatBolusIntervalMinMin = 'heat_bolus_interval_min_min';
   static const heatBolusIntervalMaxMin = 'heat_bolus_interval_max_min';
-  static const sweatNaMmolL = 'sweat_na_mmol_l';
-  static const bodyMassLossWarnPct = 'body_mass_loss_warn_pct';
-  static const hydrationGoalFraction = 'hydration_goal_fraction';
   static const heatThresholdC = 'heat_threshold_c';
   // Recovery
   static const hrvShortDays = 'hrv_short_days';
@@ -170,7 +171,11 @@ abstract final class A {
   static const splitDinner = 'split_dinner';
   // Attributes
   static const attrWindowDays = 'attr_window_days';
-  static const attrRhrZeroSd = 'attr_rhr_zero_sd';
+  static const attrNutritionTolerance = 'attr_nutrition_tolerance';
+  // Notifications
+  static const quietFromH = 'quiet_from_h';
+  static const quietToH = 'quiet_to_h';
+  static const workOpenWindowH = 'work_open_window_h';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -320,11 +325,11 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 14,
     unitEs: 'h',
     group: AssumptionGroup.energia,
-    titleEs: 'Horas de referencia del turno',
+    titleEs: 'Horas de trabajo de referencia',
     explainEs:
-        'Un turno de 07:00 a 17:00 son 10 h. Si el turno es más corto '
-        'o más largo, solo se escala la parte de actividad del gasto; el '
-        'gasto basal no cambia con las horas trabajadas.',
+        'Con 10 h de trabajo se usa el factor de actividad completo. Si '
+        'trabajas menos o más (según tus registros de TRABAJO), solo se '
+        'escala la parte de actividad del gasto; el basal no cambia.',
     source: _v1,
   ),
   // ------------------------------------------------------------ MACROS
@@ -420,30 +425,6 @@ const List<AssumptionDef> assumptionCatalog = [
   ),
   // ------------------------------------------------------- HIDRATACIÓN
   AssumptionDef(
-    key: A.sweatReplaceMinFrac,
-    value: 0.8,
-    min: 0.5,
-    max: 1.0,
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Reposición mínima del sudor',
-    explainEs:
-        'Con prueba de sudor se planifica reponer entre el 80 % y el '
-        '100 % de lo que pierdes por hora.',
-    source: _model,
-  ),
-  AssumptionDef(
-    key: A.sweatReplaceMaxFrac,
-    value: 1.0,
-    min: 0.5,
-    max: 1.2,
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Reposición máxima del sudor',
-    explainEs:
-        'Extremo alto del plan: reponer el 100 % de la tasa de sudor, '
-        'siempre por debajo del tope por hora.',
-    source: _model,
-  ),
-  AssumptionDef(
     key: A.fluidCapLPerH,
     value: 1.42,
     min: 0.5,
@@ -452,8 +433,8 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.hidratacion,
     titleEs: 'Tope de líquido por hora',
     explainEs:
-        'No más de 1,42 L por hora (1,5 cuartos de galón). Más que eso '
-        'no se absorbe y aumenta el riesgo de hiponatremia.',
+        'El rango nunca pasa de 1,42 L por hora (1,5 cuartos de galón). '
+        'Más que eso no se absorbe y aumenta el riesgo de hiponatremia.',
     source: 'Ejército de EE. UU., TB MED 507 (trabajo en calor)',
   ),
   AssumptionDef(
@@ -463,10 +444,10 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 0.5,
     unitEs: 'L',
     group: AssumptionGroup.hidratacion,
-    titleEs: 'Toma sin prueba de sudor',
+    titleEs: 'Taza de referencia',
     explainEs:
-        'Sin prueba de sudor: 0,24 L (una taza) cada 15–20 minutos '
-        'mientras estés al calor.',
+        'Base del plan del termo: 0,24 L (una taza) cada 15–20 minutos de '
+        'calor. Es un rango orientativo, no una receta.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
@@ -477,7 +458,7 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'min',
     group: AssumptionGroup.hidratacion,
     titleEs: 'Intervalo corto entre tomas',
-    explainEs: 'Intervalo más frecuente del plan sin prueba de sudor.',
+    explainEs: 'Con tomas cada 15 min sale el extremo alto del rango.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
@@ -489,47 +470,69 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.hidratacion,
     titleEs: 'Intervalo largo entre tomas',
     explainEs:
-        'Intervalo menos frecuente del plan sin prueba de sudor. '
-        'También marca los avisos de hidratación (cada 20 min).',
+        'Con tomas cada 20 min sale el extremo bajo del rango. Mientras '
+        'trabajas no llegan avisos: el rango se muestra antes de empezar '
+        'y en la pausa.',
     source: 'NIOSH 2016, Occupational Exposure to Heat and Hot Environments',
   ),
   AssumptionDef(
-    key: A.sweatNaMmolL,
-    value: 40,
-    min: 10,
-    max: 100,
-    unitEs: 'mmol/L',
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Sodio en el sudor',
-    explainEs:
-        'Concentración típica asumida: 40 mmol/L. Varía mucho entre '
-        'personas (de ~10 a ~90 mmol/L). Sodio a reponer = litros × mmol/L × '
-        '23 mg. El potasio no se calcula a partir del sodio.',
-    source: 'Baker LB. Sports Med 2017;47(Supl 1):111–128',
-  ),
-  AssumptionDef(
-    key: A.bodyMassLossWarnPct,
-    value: 2.0,
-    min: 0.5,
-    max: 5,
-    unitEs: '%',
-    group: AssumptionGroup.hidratacion,
-    titleEs: 'Pérdida de peso que dispara aviso',
-    explainEs:
-        'Perder más del 2 % del peso corporal durante el turno empeora '
-        'el rendimiento y el juicio con calor.',
-    source: 'ACSM, Med Sci Sports Exerc 2007;39:377–390 (Sawka y col.)',
-  ),
-  AssumptionDef(
-    key: A.hydrationGoalFraction,
-    value: 0.80,
-    min: 0.5,
+    key: A.sweatFeelPocoFactor,
+    value: 0.8,
+    min: 0.3,
     max: 1.0,
     group: AssumptionGroup.hidratacion,
-    titleEs: 'Cumplimiento de hidratación',
+    titleEs: 'Sudé poco: factor del termo',
     explainEs:
-        'Un turno cuenta como bien hidratado si bebiste al menos el '
-        '80 % del plan del termo.',
+        'Si en tus últimos trabajos marcaste «poco», el rango del termo se '
+        'multiplica por 0,8.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelNormalFactor,
+    value: 1.0,
+    min: 0.5,
+    max: 1.5,
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Sudé normal: factor del termo',
+    explainEs: '«Normal» deja el rango base tal cual.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelMuchoFactor,
+    value: 1.2,
+    min: 1.0,
+    max: 2.0,
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Sudé mucho: factor del termo',
+    explainEs:
+        'Si marcaste «mucho», el rango se multiplica por 1,2. El sudor '
+        'cambia con el clima y la tarea: por eso es un rango.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.sweatFeelDays,
+    value: 7,
+    min: 3,
+    max: 28,
+    unitEs: 'días',
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Días de sensación de sudor',
+    explainEs:
+        'El factor usa la media de lo que marcaste en los últimos 7 días.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.hydrationPreWorkLeadMin,
+    value: 30,
+    min: 5,
+    max: 120,
+    unitEs: 'min',
+    group: AssumptionGroup.hidratacion,
+    titleEs: 'Aviso antes de trabajar',
+    explainEs:
+        'El aviso «llena el termo» llega 30 min antes de un trabajo con calor '
+        'que tengas planificado. Durante el trabajo no hay avisos, salvo en '
+        'la pausa.',
     source: _model,
   ),
   AssumptionDef(
@@ -1045,9 +1048,7 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'mg',
     group: AssumptionGroup.despensa,
     titleEs: 'Límite de sodio diario',
-    explainEs:
-        'El plan del día no pasa de 2300 mg de sodio más el sodio que '
-        'pierdes en el sudor del turno.',
+    explainEs: 'El plan del día de la despensa no pasa de este total de sodio.',
     source: 'NASEM 2019, Dietary Reference Intakes for Sodium and Potassium',
   ),
   AssumptionDef(
@@ -1196,7 +1197,7 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 40,
     unitEs: 'g',
     group: AssumptionGroup.interacciones,
-    titleEs: 'Fibra cruda antes del turno',
+    titleEs: 'Fibra cruda antes del trabajo',
     explainEs:
         'Desde 10 g de fibra de alimentos crudos en el desayuno o la '
         'media mañana se avisa: en volumen suele dar molestias en el trabajo '
@@ -1288,8 +1289,8 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 180,
     unitEs: 'min',
     group: AssumptionGroup.horario,
-    titleEs: 'Desayuno antes del turno',
-    explainEs: 'El desayuno se agenda 45 min antes de entrar al turno.',
+    titleEs: 'Desayuno antes del trabajo',
+    explainEs: 'El desayuno se agenda 45 min antes de empezar a trabajar.',
     source: _model,
   ),
   AssumptionDef(
@@ -1300,7 +1301,8 @@ const List<AssumptionDef> assumptionCatalog = [
     unitEs: 'min',
     group: AssumptionGroup.horario,
     titleEs: 'Duración del almuerzo',
-    explainEs: 'Una hora de receso para almorzar.',
+    explainEs:
+        'Se usa cuando la plantilla de trabajo no indica los minutos de pausa.',
     source: _model,
   ),
   AssumptionDef(
@@ -1310,9 +1312,9 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 240,
     unitEs: 'min',
     group: AssumptionGroup.horario,
-    titleEs: 'Post-entreno después del turno',
+    titleEs: 'Post-entreno después del trabajo',
     explainEs:
-        'Se entrena después del turno: la comida post-entreno va 90 '
+        'Se entrena después del trabajo: la comida post-entreno va 90 '
         'min después de la salida.',
     source: _model,
   ),
@@ -1336,7 +1338,7 @@ const List<AssumptionDef> assumptionCatalog = [
     max: 300,
     unitEs: 'min',
     group: AssumptionGroup.horario,
-    titleEs: 'Cena después del turno',
+    titleEs: 'Cena después del trabajo',
     explainEs:
         'En días sin entreno la cena va 2 h 30 min después de la '
         'salida.',
@@ -1416,21 +1418,57 @@ const List<AssumptionDef> assumptionCatalog = [
     group: AssumptionGroup.atributos,
     titleEs: 'Ventana de atributos',
     explainEs:
-        'RESISTENCIA y DISCIPLINA se calculan sobre los últimos 30 '
-        'días con datos.',
+        'RESISTENCIA, NUTRICIÓN, RECUPERACIÓN y DISCIPLINA se calculan '
+        'sobre los últimos 30 días con datos.',
     source: _model,
   ),
   AssumptionDef(
-    key: A.attrRhrZeroSd,
-    value: 2,
-    min: 0.5,
-    max: 5,
-    unitEs: 'DE',
+    key: A.attrNutritionTolerance,
+    value: 0.10,
+    min: 0.02,
+    max: 0.3,
     group: AssumptionGroup.atributos,
-    titleEs: 'RECUPERACIÓN: FC en reposo que da cero',
+    titleEs: 'NUTRICIÓN: margen del día cumplido',
     explainEs:
-        'Si tu FC en reposo de la semana está 2 desviaciones estándar '
-        'por encima de tu media, esa parte de RECUPERACIÓN vale 0.',
+        'Un día completo cuenta para NUTRICIÓN si las kcal quedan a ±10 % '
+        'de tu objetivo y la proteína llega al menos al 90 %.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quietFromH,
+    value: 21,
+    min: 18,
+    max: 24,
+    unitEs: 'h',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Silencio desde',
+    explainEs:
+        'Desde las 21:00 no llegan recordatorios de comidas ni de cierre del '
+        'día. La seguridad de la comida cocinada sí avisa.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.quietToH,
+    value: 6,
+    min: 3,
+    max: 10,
+    unitEs: 'h',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Silencio hasta',
+    explainEs: 'Hasta las 06:00 tampoco llegan esos recordatorios.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.workOpenWindowH,
+    value: 12,
+    min: 2,
+    max: 24,
+    unitEs: 'h',
+    group: AssumptionGroup.avisos,
+    titleEs: 'Silencio de un trabajo sin hora de fin',
+    explainEs:
+        'Si empiezas un trabajo sin hora de fin, los avisos callan hasta que '
+        'marques TERMINAR o pasen 12 h.',
     source: _model,
   ),
 ];

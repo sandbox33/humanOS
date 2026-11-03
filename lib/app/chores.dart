@@ -7,6 +7,9 @@ import '../data/user_db.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
 import '../features/heavy_duty/domain/training_plan.dart';
+import '../features/trabajo/data/work_repository.dart';
+import '../features/trabajo/domain/work_model.dart';
+import '../services/notifications.dart';
 import '../services/services.dart';
 import '../telemetry/confidence.dart';
 import '../telemetry/health_connect_source.dart';
@@ -91,37 +94,113 @@ Future<int?> syncScreenTime(WidgetRef ref) async {
   }
 }
 
-/// Meal reminders from the shift schedule and the next session day.
+/// Days ahead covered by the reminder schedule.
+const reminderDays = 7;
+
+/// Rebuilds every reminder of the next days. All of them pass the
+/// notification policy: nothing inside a work window (planned in a
+/// template or in progress) except its break, and meal or day-close
+/// reminders never in quiet hours.
 Future<void> rescheduleReminders(WidgetRef ref) async {
   final service = ref.read(notificationServiceProvider);
-  final profile = ref.read(profileProvider).value;
-  if (profile == null) return;
   final settings = ref.read(settingsProvider);
   final a = ref.read(currentAssumptionsProvider);
   final today = ref.read(todayProvider);
   final plan = ref.read(sessionPlanProvider);
-  final shift = ShiftConfig.fromClock(
-    shiftStart: profile.shiftStart,
-    shiftEnd: profile.shiftEnd,
-    lunchStart: profile.lunchStart,
-  );
-  final effort = WorkEffort.parse(ref.read(todayLogProvider)?.workEffort);
+  final policy = PolicyParams.fromAssumptions(a);
+  final hydration = HydrationParams.fromAssumptions(a);
+  final schedules = [for (final t in ref.read(activeTemplatesProvider)) scheduleOf(t)];
+  final feel = ref.read(sweatFeelHistoryProvider);
+  final running = ref.read(inProgressEntryProvider);
+  final templates = ref.read(workTemplatesProvider).value ?? const <WorkTemplateRow>[];
+  final runningWindow = running == null
+      ? null
+      : inProgressWindow(
+          running.entry,
+          openHours: a.integer(A.workOpenWindowH),
+          schedule: switch (templateById(templates, running.row.templateId)) {
+            final t? => scheduleOf(t),
+            null => null,
+          },
+        );
+
+  final reminders = <ScheduledReminder>[];
+  bool allowed(NotificationKind kind, DateTime at, List<WorkWindow> windows) =>
+      evaluateNotification(kind: kind, at: at, windows: windows, params: policy).allowed;
+
+  for (var offset = 0; offset < reminderDays; offset++) {
+    final d = addDays(today, offset);
+    final day = DateTime(d.year, d.month, d.day);
+    final windows = [...plannedWindows(day, schedules), ?runningWindow];
+
+    if (settings.mealReminders) {
+      final frame = mealFrameFor(day, windows);
+      if (frame != null) {
+        for (final slot in mealSchedule(
+          shift: frame,
+          trainingDay: offset == 0 ? plan.isDue(d) : dateOnly(plan.earliestDate) == dateOnly(d),
+          workday: true,
+          params: ScheduleParams.fromAssumptions(a),
+        )) {
+          final at = day.add(Duration(minutes: slot.minuteOfDay));
+          if (!allowed(NotificationKind.meal, at, windows)) continue;
+          reminders.add(ScheduledReminder(
+            channel: ReminderChannel.meals,
+            at: at,
+            title: slot.block.labelEs,
+            body: '${slot.clock} · ${slot.contextEs}',
+          ));
+        }
+      }
+    }
+
+    if (settings.hydrationReminders) {
+      final heat = plannedHeatMinutes(windows);
+      if (heat > 0) {
+        final thermos = hydrationPlan(heatMinutes: heat, feelHistory: feel, today: d, params: hydration);
+        for (final r in hydrationReminders(windows: windows, plan: thermos, params: hydration)) {
+          if (!allowed(NotificationKind.hydration, r.at, windows)) continue;
+          reminders.add(ScheduledReminder(
+            channel: ReminderChannel.hydration,
+            at: r.at,
+            title: r.titleEs,
+            body: r.bodyEs,
+          ));
+        }
+      }
+    }
+
+    if (settings.sessionReminder && dateOnly(plan.earliestDate) == dateOnly(d) && windows.isNotEmpty) {
+      final end = windows.map((w) => w.end).reduce((x, y) => x.isAfter(y) ? x : y);
+      if (allowed(NotificationKind.session, end, windows)) {
+        reminders.add(ScheduledReminder(
+          channel: ReminderChannel.training,
+          at: end,
+          title: 'HEAVY DUTY',
+          body: 'Sesión ${plan.template.code} · ${plan.mode.labelEs}. Antes, revisa tu estado.',
+        ));
+      }
+    }
+
+    final close = settings.dayCloseTime;
+    if (close != null) {
+      try {
+        final at = day.add(Duration(minutes: parseClock(close)));
+        if (allowed(NotificationKind.dayClose, at, windows)) {
+          reminders.add(ScheduledReminder(
+            channel: ReminderChannel.dayClose,
+            at: at,
+            title: 'CIERRE DEL DÍA',
+            body: '¿Registraste tu trabajo y tus comidas de hoy?',
+          ));
+        }
+      } on FormatException {
+        // A malformed time keeps the day-close reminder off.
+      }
+    }
+  }
   try {
-    await service.scheduleMeals(
-      mealSchedule(
-        shift: shift,
-        trainingDay: plan.isDue(today),
-        workday: effort != WorkEffort.off,
-        params: ScheduleParams.fromAssumptions(a),
-      ),
-      enabled: settings.mealReminders,
-    );
-    await service.scheduleSession(
-      plan.earliestDate,
-      'Sesión ${plan.template.code} · ${plan.mode.labelEs}. Antes, revisa tu estado.',
-      minuteOfDay: shift.shiftEndMin,
-      enabled: settings.sessionReminder,
-    );
+    await service.scheduleAll(reminders);
   } on Object {
     // Exact alarms or notifications not allowed yet: reminders stay off.
   }

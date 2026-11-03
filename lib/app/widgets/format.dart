@@ -24,6 +24,3 @@ final DateFormat _time = DateFormat('HH:mm', 'es');
 String fmtDay(DateTime day) => _dayFormat.format(day).toUpperCase();
 String fmtShortDay(DateTime day) => _shortDay.format(day);
 String fmtTime(DateTime time) => _time.format(time);
-
-String fmtUsd(double? value) =>
-    value == null ? sinDato : '\$${formatDecimal(value, decimals: 2)}';

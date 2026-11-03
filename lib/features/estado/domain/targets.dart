@@ -6,6 +6,7 @@ import '../../../data/nutrients.dart';
 import '../../../data/settings.dart';
 import '../../../data/user_db.dart';
 import '../../registro/domain/intake.dart';
+import '../../trabajo/domain/work_model.dart';
 import '../../turno/data/daily_log_repository.dart';
 import '../data/body_repository.dart';
 
@@ -19,7 +20,7 @@ final bodyMetricsProvider = StreamProvider<List<BodyMetricRow>>(
   (ref) => ref.watch(bodyRepositoryProvider).watchAll(),
 );
 
-/// Daily logs of the last 120 days (sweat tests, effort, fluids…).
+/// Daily logs of the last 120 days (effort, heat, sweat feel…).
 final dailyLogsProvider = StreamProvider<List<DailyLogRow>>((ref) {
   final from = isoDate(addDays(ref.watch(todayProvider), -119));
   return ref.watch(dailyLogRepositoryProvider).watchSince(from);
@@ -33,10 +34,10 @@ final todayLogProvider = Provider<DailyLogRow?>((ref) {
   return null;
 });
 
-/// kcal per day over the last 60 days; `partial` when an item had no
-/// energy data (such days never count for the adaptive TDEE).
+/// kcal (and protein) per day over the last 60 days; `partial` when an item
+/// had no energy data (such days never count for the adaptive TDEE).
 final intakeKcalHistoryProvider =
-    StreamProvider<Map<String, ({double kcal, bool partial})>>((ref) {
+    StreamProvider<Map<String, ({double kcal, bool partial, double? protein})>>((ref) {
   final today = ref.watch(todayProvider);
   final resolver = ref.watch(nutritionResolverProvider);
   return ref
@@ -54,6 +55,7 @@ final intakeKcalHistoryProvider =
                 return (
                   kcal: totals.value(NutrientKey.energy) ?? 0.0,
                   partial: totals.isPartial(NutrientKey.energy),
+                  protein: totals.isPartial(NutrientKey.protein) ? null : totals.value(NutrientKey.protein),
                 );
               }(),
           });
@@ -94,10 +96,14 @@ class EnergyStatus {
   double? get trendKg => trend.isEmpty ? null : trend.last.trendKg;
 }
 
-DayType dayTypeOf(DailyLogRow? log) {
+/// Workday when the day has work (logged or planned in a template) or a
+/// declared effort; off day when the effort says LIBRE and nothing was
+/// logged; unknown otherwise.
+DayType dayTypeOf(DailyLogRow? log, {bool hasWork = false}) {
   final effort = WorkEffort.parse(log?.workEffort);
-  if (effort == null) return DayType.unknown;
-  return effort == WorkEffort.off ? DayType.offDay : DayType.workday;
+  if (effort == WorkEffort.off) return hasWork ? DayType.workday : DayType.offDay;
+  if (effort != null || hasWork) return DayType.workday;
+  return DayType.unknown;
 }
 
 /// Today's energy and macro targets. Null until the first weigh-in.
@@ -138,20 +144,18 @@ final energyStatusProvider = Provider<EnergyStatus?>((ref) {
     ageYears: ageFromBirthYear(profile.birthYear, today),
     sex: Sex.parse(profile.sex),
   );
-  final shift = ShiftConfig.fromClock(
-    shiftStart: profile.shiftStart,
-    shiftEnd: profile.shiftEnd,
-    lunchStart: profile.lunchStart,
-  );
+  final worked = ref.watch(workedMinutesTodayProvider);
+  final planned = ref.watch(plannedMinutesTodayProvider);
+  final workMinutes = worked ?? planned;
   final todayLog = ref.watch(todayLogProvider);
   final dayEnergy = dailyEnergyTarget(
     bmr: bmr,
-    dayType: dayTypeOf(todayLog),
+    dayType: dayTypeOf(todayLog, hasWork: workMinutes != null),
     palWorkday: params.palWorkday,
     palOffday: params.palOffday,
     surplusKcal: params.bootstrapSurplusKcal,
     referenceHours: a[A.referenceShiftHours],
-    hoursWorked: shift.hours,
+    hoursWorked: workMinutes == null ? null : workMinutes / 60,
   );
   final weekly = double.tryParse(settings[SettingKey.weeklyTargetKcal] ?? '');
   final adaptive = estimate.sufficient && weekly != null;

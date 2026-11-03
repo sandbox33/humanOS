@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
@@ -208,15 +209,82 @@ Future<DbPrepareReport> prepareUserDbFile({
   );
 }
 
+/// `PRAGMA user_version` (drift's schema version) of an existing file.
+int readUserVersion(File file, String keyHex) {
+  final db = raw.sqlite3.open(file.path);
+  try {
+    applyDbKey(db, keyHex);
+    return db.select('PRAGMA user_version').first.values.first! as int;
+  } finally {
+    db.close();
+  }
+}
+
+Map<String, int> fileRowCounts(File file, String keyHex) {
+  final db = raw.sqlite3.open(file.path);
+  try {
+    applyDbKey(db, keyHex);
+    return tableRowCounts(db);
+  } finally {
+    db.close();
+  }
+}
+
+/// Tables a migration may shrink on purpose (obsolete assumption keys).
+const migrationMayShrink = {'assumptions'};
+
+/// Tables of [before] that lost rows in [after] (renamed or dropped tables
+/// count as lost).
+List<String> migrationLosses(Map<String, int> before, Map<String, int> after) => [
+      for (final e in before.entries)
+        if (!migrationMayShrink.contains(e.key) && (after[e.key] ?? -1) < e.value) e.key,
+    ];
+
+/// Encrypted copy of the file taken before a schema migration, verified
+/// row by row count against the original.
+class MigrationBackup {
+  const MigrationBackup({required this.path, required this.rowCounts, required this.fromVersion});
+  final String path;
+  final Map<String, int> rowCounts;
+  final int fromVersion;
+}
+
+MigrationBackup backupBeforeMigration(
+  File file,
+  String keyHex, {
+  required Directory backups,
+  required int fromVersion,
+  required String stamp,
+}) {
+  backups.createSync(recursive: true);
+  final before = fileRowCounts(file, keyHex);
+  final path = p.join(backups.path, 'user-v$fromVersion-antes-de-migrar-$stamp.sqlite');
+  file.copySync(path);
+  final copy = fileRowCounts(File(path), keyHex);
+  if (!_sameCounts(before, copy)) {
+    File(path).deleteSync();
+    throw const DbOpenException('La copia previa a la migración no coincide con tu base: no se migró nada.');
+  }
+  return MigrationBackup(path: path, rowCounts: before, fromVersion: fromVersion);
+}
+
 /// The opened database and what the preparation did.
 class OpenedUserDb {
-  const OpenedUserDb({required this.db, required this.encrypted, required this.report});
+  const OpenedUserDb({
+    required this.db,
+    required this.encrypted,
+    required this.report,
+    this.migration,
+  });
 
   final UserDb db;
 
   /// The file on disk is not readable as plain SQLite.
   final bool encrypted;
   final DbPrepareReport report;
+
+  /// Verified copy taken before a schema migration in this launch.
+  final MigrationBackup? migration;
 }
 
 /// Opens the encrypted `user.sqlite` from the app support directory.
@@ -230,6 +298,20 @@ Future<OpenedUserDb> openUserDb({FlutterSecureStorage storage = const FlutterSec
     writeKey: (key) => storage.write(key: DbKey.storageName, value: key),
   );
   final key = report.keyHex;
+  final stamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
+  MigrationBackup? migration;
+  if (file.existsSync() && file.lengthSync() > 0) {
+    final version = readUserVersion(file, key);
+    if (version > 0 && version < UserDb.currentSchema) {
+      migration = backupBeforeMigration(
+        file,
+        key,
+        backups: Directory(p.join(dir.path, 'backups')),
+        fromVersion: version,
+        stamp: stamp,
+      );
+    }
+  }
   final db = UserDb(
     driftDatabase(
       name: 'user',
@@ -241,5 +323,31 @@ Future<OpenedUserDb> openUserDb({FlutterSecureStorage storage = const FlutterSec
   );
   // The first query creates or migrates the file; then it must be encrypted.
   await db.customSelect('SELECT 1').get();
-  return OpenedUserDb(db: db, encrypted: !isPlainSqlite(file), report: report);
+  if (migration != null) {
+    final after = <String, int>{};
+    for (final table in migration.rowCounts.keys) {
+      final rows = await db
+          .customSelect("SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name = ?",
+              variables: [Variable.withString(table)])
+          .getSingle();
+      if ((rows.data['n'] as int) == 0) continue;
+      final count = await db.customSelect('SELECT count(*) AS n FROM "$table"').getSingle();
+      after[table] = count.data['n'] as int;
+    }
+    final lost = migrationLosses(migration.rowCounts, after);
+    if (lost.isNotEmpty) {
+      await db.close();
+      File(migration.path).copySync(file.path);
+      throw DbOpenException(
+        'La actualización de la base perdía filas (${lost.join(', ')}): se restauró tu '
+        'copia y no se aplicó. Reporta el problema.',
+      );
+    }
+  }
+  return OpenedUserDb(
+    db: db,
+    encrypted: !isPlainSqlite(file),
+    report: report,
+    migration: migration,
+  );
 }

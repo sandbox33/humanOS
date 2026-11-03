@@ -62,7 +62,7 @@ class PantryCandidate {
     this.kcalPer100g,
     this.proteinPer100g,
     this.nrf93Per100kcal,
-    this.priceUsdPerKg,
+    this.priceCentsPerKg,
     this.diaas,
     this.nova,
     this.userExcluded = false,
@@ -76,7 +76,7 @@ class PantryCandidate {
   final double? kcalPer100g;
   final double? proteinPer100g;
   final double? nrf93Per100kcal;
-  final double? priceUsdPerKg;
+  final int? priceCentsPerKg;
 
   /// DIAAS as a fraction (1.0 = 100 %).
   final double? diaas;
@@ -159,9 +159,10 @@ Map<String, double> _zScores(Map<String, double> values) {
 double? _nrfPerUsd(PantryCandidate c) {
   final nrf = c.nrf93Per100kcal;
   final kcal = c.kcalPer100g;
-  final price = c.priceUsdPerKg;
-  if (nrf == null || kcal == null || price == null || price <= 0) return null;
-  final kcalPerUsd = kcal * 10 / price;
+  final cents = c.priceCentsPerKg;
+  if (nrf == null || kcal == null || cents == null || cents <= 0) return null;
+  // kcal per 100 g × 10 = kcal per kg; per kg price in cents ÷ 100 = USD.
+  final kcalPerUsd = kcal * 1000 / cents;
   return nrf * kcalPerUsd / 100;
 }
 

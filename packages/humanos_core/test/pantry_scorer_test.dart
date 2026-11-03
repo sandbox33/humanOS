@@ -10,7 +10,7 @@ void main() {
     double? kcal = 150,
     double? protein = 10,
     double? nrf = 20,
-    double? price = 4,
+    int? price = 400,
     int? nova = 1,
     int? expiry = 10,
     bool excluded = false,
@@ -23,7 +23,7 @@ void main() {
     kcalPer100g: kcal,
     proteinPer100g: protein,
     nrf93Per100kcal: nrf,
-    priceUsdPerKg: price,
+    priceCentsPerKg: price,
     nova: nova,
     daysToExpiry: expiry,
     userExcluded: excluded,
@@ -116,7 +116,7 @@ void main() {
 
   test('z-scores make cheaper nutrient density win', () {
     final scored = scorePantry(
-      [item('cheap', price: 2), item('expensive', price: 12)],
+      [item('cheap', price: 200), item('expensive', price: 1200)],
       gap: gap,
       params: p,
     );

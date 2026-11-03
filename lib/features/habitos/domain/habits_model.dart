@@ -9,7 +9,8 @@ import '../../estado/domain/readiness_today.dart';
 import '../../estado/domain/targets.dart';
 import '../../heavy_duty/domain/training_plan.dart';
 import '../../registro/domain/intake.dart';
-import '../../turno/domain/hydration.dart';
+import '../../trabajo/data/work_repository.dart';
+import '../../trabajo/domain/work_model.dart';
 import '../data/habits_repository.dart';
 
 final habitsRepositoryProvider =
@@ -111,7 +112,7 @@ const autoHabitSources = {
   HabitSource.weighIn,
   HabitSource.sober,
   HabitSource.screenMinutes,
-  HabitSource.hydrationPct,
+  HabitSource.hydrationAck,
   HabitSource.sleepHours,
 };
 
@@ -126,7 +127,8 @@ final autoHabitValuesProvider = Provider<Map<String, double?>>((ref) {
   final intake = ref.watch(dayIntakeProvider(today)).value;
   final log = ref.watch(todayLogProvider);
   final weight = ref.watch(latestWeightProvider);
-  final compliance = ref.watch(hydrationComplianceProvider);
+  final acks = ref.watch(thermoAcksTodayProvider);
+  final heatToday = ref.watch(heatMinutesTodayProvider) > 0;
   final sleepMin = ref.watch(dailyTelemetryProvider)[todayDay]?.sleepMinutes;
   final sober = log?.sober;
   return {
@@ -136,8 +138,8 @@ final autoHabitValuesProvider = Provider<Map<String, double?>>((ref) {
     HabitSource.weighIn: weight?.date == today ? 1 : 0,
     HabitSource.sober: sober == null ? null : (sober ? 1 : 0),
     HabitSource.screenMinutes: log?.screenMinutes?.toDouble(),
-    HabitSource.hydrationPct:
-        (log?.heatHours ?? 0) > 0 && compliance != null ? compliance * 100 : null,
+    // Only a day with heat counts; without heat the habit is not due.
+    HabitSource.hydrationAck: heatToday || acks > 0 ? acks.toDouble() : null,
     HabitSource.sleepHours: sleepMin == null ? null : sleepMin / 60,
   };
 });
@@ -197,7 +199,7 @@ Future<List<StreakKind>> saveStreaks(WidgetRef ref) async {
   return up;
 }
 
-/// The four attributes from real data.
+/// The five attributes from real data.
 final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
   final a = ref.watch(currentAssumptionsProvider);
   final params = AttributeParams.fromAssumptions(a);
@@ -223,16 +225,53 @@ final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
   }
 
   final logs = ref.watch(dailyLogsProvider).value ?? const <DailyLogRow>[];
-  final sweat = SweatParams.fromAssumptions(a);
-  final rate = ref.watch(latestSweatTestProvider)?.rate;
-  final shifts = [
+  final logByDate = {for (final l in logs) l.date: l};
+
+  // RESISTENCIA: days with work, whether the day was logged after work and
+  // the thermos reminders of its planned heat windows.
+  final schedules = [for (final t in ref.watch(activeTemplatesProvider)) scheduleOf(t)];
+  final hydration = HydrationParams.fromAssumptions(a);
+  final workDates = <String>{
+    for (final e in ref.watch(workEntriesProvider)) isoDate(e.date),
     for (final l in logs)
-      if ((l.heatHours ?? 0) > 0)
-        ShiftHydration(
-          date: parseIsoDate(l.date),
-          plannedL: plannedLitres(planFor(l.heatHours!, sweat, rate)),
-          drankL: l.fluidsL,
-        ),
+      if (WorkEffort.parse(l.workEffort) case final effort? when effort != WorkEffort.off) l.date,
+  };
+  final workDays = <WorkDayLog>[];
+  for (final date in workDates) {
+    final d = parseIsoDate(date);
+    final log = logByDate[date];
+    final windows = plannedWindows(DateTime(d.year, d.month, d.day), schedules);
+    final plan = hydrationPlan(
+      heatMinutes: plannedHeatMinutes(windows),
+      feelHistory: const [],
+      today: d,
+      params: hydration,
+    );
+    final sent = hydrationReminders(windows: windows, plan: plan, params: hydration).length;
+    final acked = (log?.thermoPre == true ? 1 : 0) + (log?.thermoBreak == true ? 1 : 0);
+    workDays.add(WorkDayLog(
+      date: d,
+      logged: log?.sweatFeel != null || log?.effortFeel != null || log?.workEffort != null,
+      remindersSent: sent,
+      remindersAcked: acked > sent ? sent : acked,
+    ));
+  }
+
+  // NUTRICIÓN: DÍA COMPLETO days against the current targets.
+  final energy = ref.watch(energyStatusProvider);
+  final intake = ref.watch(intakeKcalHistoryProvider).value ?? const {};
+  final nutritionDays = <NutritionDay>[
+    if (energy != null)
+      for (final l in logs)
+        if (l.intakeComplete)
+          if (intake[l.date] case final day? when !day.partial && day.protein != null)
+            NutritionDay(
+              date: parseIsoDate(l.date),
+              kcal: day.kcal,
+              kcalTarget: energy.targetKcal,
+              proteinG: day.protein!,
+              proteinTargetG: energy.macros.proteinG,
+            ),
   ];
 
   final telemetry = ref.watch(dailyTelemetryProvider);
@@ -241,17 +280,10 @@ final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
       if (telemetry[addDays(today, -i)]?.sleepMinutes != null)
         telemetry[addDays(today, -i)]!.sleepMinutes! / 60,
   ];
-  final recovery = ref.watch(recoveryHistoryProvider);
-  final recent = <double>[];
-  final base = <double>[];
-  for (final r in recovery) {
-    final rhr = r.rhrBpm;
-    if (rhr == null) continue;
-    final age = daysBetween(r.date, today);
-    if (age >= 0 && age < 7) recent.add(rhr);
-    if (age >= 7 && age < 35) base.add(rhr);
-  }
-  double? mean(List<double> v) => v.isEmpty ? null : v.reduce((x, y) => x + y) / v.length;
+  final bands = <DateTime, ReadinessBand>{
+    for (final r in ref.watch(readinessHistoryProvider).value ?? const <ReadinessRow>[])
+      parseIsoDate(r.date): ?ReadinessBand.parse(r.band),
+  };
 
   final overview = ref.watch(habitsOverviewProvider);
   final screenHabit = overview?.habits
@@ -284,11 +316,10 @@ final attributesProvider = Provider<Map<AttributeKind, double?>>((ref) {
       today: today,
       e1rmCurrent: current,
       e1rmBaseline: baseline,
-      shifts: shifts,
+      workDays: workDays,
+      nutritionDays: nutritionDays,
       sleepHoursLast7: sleep,
-      rhrRecentMean: mean(recent),
-      rhrBaselineMean: mean(base),
-      rhrBaselineSd: base.length >= 2 ? sampleSd(base) : null,
+      readinessBands: bands,
       disciplineDays: discipline,
       screenLimitMinutes: screenHabit?.target,
     ),
