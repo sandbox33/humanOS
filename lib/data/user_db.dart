@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'migrations/v10_to_v11.dart';
 import 'migrations/v1_to_v2.dart';
 import 'migrations/v2_to_v3.dart';
 import 'migrations/v3_to_v4.dart';
@@ -9,6 +10,7 @@ import 'migrations/v6_to_v7.dart';
 import 'migrations/v7_to_v8.dart';
 import 'migrations/v8_to_v9.dart';
 import 'migrations/v9_to_v10.dart';
+import 'tables/close_tables.dart';
 import 'tables/context_tables.dart';
 import 'tables/dns_tables.dart';
 import 'tables/finance_tables.dart';
@@ -87,13 +89,17 @@ part 'user_db.g.dart';
   // Schema v10
   PayWeeks,
   CashCounts,
+  // Schema v11
+  DayCloses,
+  InteractionCategories,
+  DayCloseInteractions,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 10;
+  static const currentSchema = 11;
 
   @override
   int get schemaVersion => currentSchema;
@@ -122,6 +128,8 @@ class UserDb extends _$UserDb {
                 await migrateV8ToV9(m, this);
               case 9:
                 await migrateV9ToV10(m, this);
+              case 10:
+                await migrateV10ToV11(m, this);
             }
           }
         },
@@ -176,5 +184,8 @@ class UserDb extends _$UserDb {
         receiptLinks,
         payWeeks,
         cashCounts,
+        dayCloses,
+        interactionCategories,
+        dayCloseInteractions,
       ];
 }

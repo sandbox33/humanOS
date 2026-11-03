@@ -12,6 +12,7 @@ import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/nutrients.dart';
 import '../../../services/services.dart';
+import '../../cierre/presentation/cierre_screen.dart';
 import '../../despensa/domain/meal_day.dart';
 import '../../despensa/domain/pantry_model.dart';
 import '../../estado/domain/targets.dart';
@@ -201,11 +202,18 @@ class _DayNumbers extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => QuickExpenseSheet.show(context),
-            icon: const Icon(Icons.remove_circle_outline),
-            label: const Text('GASTÉ'),
-          ),
+          Wrap(spacing: 8, runSpacing: 4, children: [
+            OutlinedButton.icon(
+              onPressed: () => QuickExpenseSheet.show(context),
+              icon: const Icon(Icons.remove_circle_outline),
+              label: const Text('GASTÉ'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CierreScreen())),
+              icon: const Icon(Icons.nightlight_outlined),
+              label: const Text('CERRAR EL DÍA'),
+            ),
+          ]),
         ],
       ),
     );
