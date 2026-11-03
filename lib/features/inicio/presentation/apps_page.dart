@@ -8,6 +8,8 @@ import '../../../app/providers.dart';
 import '../../../app/widgets/hos_page.dart';
 import '../../../services/launcher.dart';
 import '../../../services/services.dart';
+import '../../fichas/domain/token_model.dart';
+import '../../fichas/presentation/fichas_screen.dart' show confirmWithoutTokens;
 import '../../pantalla/domain/screen_model.dart';
 import '../domain/schedule_model.dart';
 
@@ -40,10 +42,13 @@ final visibleAppsProvider = FutureProvider<List<InstalledApp>>((ref) async {
 /// user turned that pause on.
 Future<void> openApp(BuildContext context, WidgetRef ref, InstalledApp app) async {
   // Read from the source, not from a provider that may still be loading.
-  final friction = await ref.read(settingsRepositoryProvider).get(ScreenKey.frictionSocial) == '1';
+  final settings = ref.read(settingsRepositoryProvider);
+  final friction = await settings.get(ScreenKey.frictionSocial) == '1';
+  // Tokens on or about to change: the exact check is outOfTokensFor.
+  final tokensOn = await settings.get(TokenKey.enabled) == '1' || await settings.get(TokenKey.pending) != null;
   if (!context.mounted) return;
   var category = AppCategory.sinClasificar;
-  if (friction) {
+  if (friction || tokensOn) {
     // Straight from the database and the phone: a provider nobody listens
     // to may be paused and never answer.
     final stored = await ref.read(screenRepositoryProvider).classes();
@@ -56,7 +61,14 @@ Future<void> openApp(BuildContext context, WidgetRef ref, InstalledApp app) asyn
     category = stored[app.package] ?? suggestCategory(declared[app.package]);
     if (!context.mounted) return;
   }
-  if (category == AppCategory.redes) {
+  // B7: with tokens on and none left for a priced category, a question
+  // (never a block).
+  if (tokensOn && await outOfTokensFor(ref, category)) {
+    if (!context.mounted) return;
+    if (!await confirmWithoutTokens(context, app.label)) return;
+  }
+  if (!context.mounted) return;
+  if (friction && category == AppCategory.redes) {
     final go = await showDialog<bool>(
       context: context,
       barrierDismissible: false,

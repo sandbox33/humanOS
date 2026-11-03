@@ -202,6 +202,7 @@ abstract final class A {
   static const payWeeksForRate = 'pay_weeks_for_rate';
   static const closeTrendMinDays = 'close_trend_min_days';
   static const closeTrendWindowDays = 'close_trend_window_days';
+  static const tokensToggleWaitH = 'tokens_toggle_wait_h';
 }
 
 const _v1 = 'Supuesto heredado de HumanOS v1';
@@ -1770,6 +1771,19 @@ const List<AssumptionDef> assumptionCatalog = [
     titleEs: 'Días que miran las tendencias',
     explainEs:
         'Las tendencias usan tus últimos días cerrados, hasta esta cantidad.',
+    source: _model,
+  ),
+  AssumptionDef(
+    key: A.tokensToggleWaitH,
+    value: 24,
+    min: 0,
+    max: 168,
+    unitEs: 'h',
+    group: AssumptionGroup.habitos,
+    titleEs: 'Espera para activar o apagar las fichas',
+    explainEs:
+        'Encender o apagar las fichas de ocio surte efecto tras estas horas, para que '
+        'no sea una decisión del momento.',
     source: _model,
   ),
 ];
