@@ -16,6 +16,9 @@ class ScreenRepository {
       .watch()
       .map((rows) => {for (final r in rows) r.package: AppCategory.parse(r.category)});
 
+  Future<Map<String, AppCategory>> classes() async =>
+      {for (final r in await _db.select(_db.appClasses).get()) r.package: AppCategory.parse(r.category)};
+
   Future<void> setClass(String package, AppCategory category) => _db.into(_db.appClasses).insertOnConflictUpdate(
         AppClassesCompanion.insert(package: package, category: category.code, updatedAt: stampOf(_now())),
       );

@@ -44,8 +44,15 @@ Future<void> openApp(BuildContext context, WidgetRef ref, InstalledApp app) asyn
   if (!context.mounted) return;
   var category = AppCategory.sinClasificar;
   if (friction) {
-    final stored = await ref.read(appClassesProvider.future);
-    final declared = await ref.read(declaredCategoriesProvider.future);
+    // Straight from the database and the phone: a provider nobody listens
+    // to may be paused and never answer.
+    final stored = await ref.read(screenRepositoryProvider).classes();
+    var declared = const <String, int>{};
+    try {
+      declared = await ref.read(screenTimeProvider)?.appCategories() ?? const {};
+    } on Object {
+      // No suggestion: the user's own class decides.
+    }
     category = stored[app.package] ?? suggestCategory(declared[app.package]);
     if (!context.mounted) return;
   }
