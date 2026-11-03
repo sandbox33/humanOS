@@ -87,7 +87,7 @@ Future<void> syncTokens(WidgetRef ref) async {
   final settings = ref.read(settingsRepositoryProvider);
   final map = {
     for (final k in [TokenKey.enabled, TokenKey.pending, TokenKey.pendingSince, TokenKey.since])
-      if (await settings.get(k) case final v?) k: v,
+      k: ?await settings.get(k),
   };
   final now = ref.read(clockProvider)();
   final wait = ref.read(currentAssumptionsProvider).integer(A.tokensToggleWaitH);
@@ -163,7 +163,7 @@ Future<bool> outOfTokensFor(WidgetRef ref, AppCategory category) async {
   final settings = ref.read(settingsRepositoryProvider);
   final map = {
     for (final k in [TokenKey.enabled, TokenKey.pending, TokenKey.pendingSince])
-      if (await settings.get(k) case final v?) k: v,
+      k: ?await settings.get(k),
   };
   final wait = ref.read(currentAssumptionsProvider).integer(A.tokensToggleWaitH);
   if (!switchOf(map).enabledAt(ref.read(clockProvider)(), wait)) return false;
