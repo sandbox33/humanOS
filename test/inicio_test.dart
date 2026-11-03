@@ -137,7 +137,9 @@ void main() {
     await tester.tap(find.text('AJUSTAR HOY'));
     await tester.pumpAndSettle();
     expect(find.text('07:00–20:00 · Trabajo'), findsOneWidget);
-    expect(find.text('PASA A MAÑANA'), findsOneWidget);
+    // The project is pushed after work and shortened up to sleep.
+    expect(find.text('20:00–21:00 · Proyecto'), findsOneWidget);
+    expect(find.text('ACORTADO'), findsOneWidget);
     expect(find.text('21:00–05:00 · Dormir'), findsOneWidget);
 
     await tester.tap(find.text('VOLVER AL HORARIO DE SIEMPRE'));

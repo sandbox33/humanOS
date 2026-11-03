@@ -68,6 +68,8 @@ class _HumanOsAppState extends ConsumerState<HumanOsApp> {
       title: 'HumanOS',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(accent, theme: theme),
+      // Themes switch instantly: no decorative cross-fade.
+      themeAnimationDuration: Duration.zero,
       locale: const Locale('es', 'EC'),
       supportedLocales: const [Locale('es', 'EC'), Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
