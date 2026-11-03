@@ -13,6 +13,7 @@ export 'src/context_mode.dart';
 export 'src/cooked_food_safety.dart';
 export 'src/day.dart';
 export 'src/day_schedule.dart';
+export 'src/dns_filter.dart';
 export 'src/double_progression.dart';
 export 'src/e1rm.dart';
 export 'src/format_es.dart';

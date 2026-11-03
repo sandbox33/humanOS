@@ -15,6 +15,8 @@ import '../features/despensa/presentation/despensa_screen.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
 import '../features/estado/presentation/estado_screen.dart';
+import '../features/filtro/domain/dns_model.dart';
+import '../features/filtro/presentation/filtro_screen.dart';
 import '../features/finanzas/presentation/finanzas_screen.dart';
 import '../features/habitos/domain/habits_model.dart';
 import '../features/habitos/presentation/habitos_screen.dart';
@@ -168,6 +170,13 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       // No usage permission or channel: the screen-time view says so.
     }
     if (mounted) await recordReadiness(ref);
+    // B3: the filter is checked on every start and return to the app.
+    if (!mounted) return;
+    try {
+      await checkFilter(ref);
+    } on Object {
+      // No network: the last verdict stays.
+    }
   }
 
   void _scheduleHabitSync() {
@@ -316,6 +325,7 @@ class MasScreen extends StatelessWidget {
         tile('CONTEXTO', 'Modo, zonas y «Llegué / Voy a salir»', Icons.place_outlined,
             () => const ContextoScreen()),
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
+        tile('FILTRO', 'Redes bloqueadas por DNS: lista y comprobación', Icons.dns_outlined, () => const FiltroScreen()),
         tile('PANTALLA', 'Tiempo por app, categoría y bloque', Icons.phone_android, () => const PantallaScreen()),
         tile('FINANZAS', 'Gastos, metas y consejos pequeños', Icons.savings_outlined, () => const FinanzasScreen()),
         tile('ASISTENTE', 'Una frase → un registro que confirmas', Icons.auto_fix_high, () => const AsistenteScreen()),
