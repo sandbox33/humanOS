@@ -212,7 +212,7 @@ class PinnedApps extends ConsumerWidget {
             ),
             for (final app in pinned)
               OutlinedButton.icon(
-                onPressed: () => launcher.launch(app.package),
+                onPressed: () => openApp(context, ref, app),
                 icon: AppIcon(app.package, size: 24),
                 label: Text(app.label.toUpperCase()),
               ),

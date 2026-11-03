@@ -34,6 +34,36 @@ object DeviceChannels {
                 }
                 "foregroundMsToday" ->
                     result.success(if (hasUsageAccess(activity)) foregroundMsToday(activity) else null)
+                // B2: raw resume/pause events per app (paired in Dart), the
+                // same source as the system's digital-wellbeing screen.
+                "events" -> {
+                    if (!hasUsageAccess(activity)) {
+                        result.success(null)
+                    } else {
+                        val from = (call.argument<Number>("fromMs") ?: 0).toLong()
+                        val to = (call.argument<Number>("toMs") ?: System.currentTimeMillis()).toLong()
+                        Thread {
+                            val value = try {
+                                usageEvents(activity, from, to)
+                            } catch (e: Exception) {
+                                null
+                            }
+                            activity.runOnUiThread { result.success(value) }
+                        }.start()
+                    }
+                }
+                // The category each app declares (game, video, social…), for
+                // the first suggestion only; the user classifies.
+                "appCategories" -> {
+                    Thread {
+                        val value = try {
+                            appCategories(activity)
+                        } catch (e: Exception) {
+                            emptyMap<String, Int>()
+                        }
+                        activity.runOnUiThread { result.success(value) }
+                    }.start()
+                }
                 else -> result.notImplemented()
             }
         }
@@ -53,6 +83,44 @@ object DeviceChannels {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun usageEvents(context: Context, from: Long, to: Long): List<Map<String, Any>> {
+        val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val events = manager.queryEvents(from, to)
+        val event = UsageEvents.Event()
+        val out = ArrayList<Map<String, Any>>()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName == context.packageName) continue
+            val type = when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND -> "resumed"
+                UsageEvents.Event.MOVE_TO_BACKGROUND -> "paused"
+                else -> continue
+            }
+            out.add(
+                mapOf(
+                    "package" to event.packageName,
+                    "activity" to (event.className ?: ""),
+                    "type" to type,
+                    "at" to event.timeStamp,
+                ),
+            )
+        }
+        return out
+    }
+
+    private fun appCategories(context: Context): Map<String, Int> {
+        val pm = context.packageManager
+        val out = HashMap<String, Int>()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return out
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        @Suppress("DEPRECATION")
+        for (info in pm.queryIntentActivities(intent, 0)) {
+            out[info.activityInfo.packageName] = info.activityInfo.applicationInfo.category
+        }
+        return out
     }
 
     private fun hasUsageAccess(context: Context): Boolean {
