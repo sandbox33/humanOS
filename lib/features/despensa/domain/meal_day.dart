@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show OrderingTerm, Value, Variable;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, OrderingTerm, Value, Variable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:humanos_core/humanos_core.dart';
 

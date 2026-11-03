@@ -313,10 +313,12 @@ class _PurchasesTab extends ConsumerWidget {
     // B4: the same purchase is an expense too (in the user's category).
     if (paid != null && paid > 0) {
       final settings = ref.read(settingsRepositoryProvider);
+      final lastCategory = await settings.get(FoodKey.purchaseCategory);
+      if (!context.mounted) return;
       final category = await askText(
         context,
         title: 'Registrar ${formatCents(paid)} como gasto en…',
-        initial: await settings.get(FoodKey.purchaseCategory),
+        initial: lastCategory,
         hint: 'Tu categoría (vacío: no registrar)',
       );
       if (category != null && category.trim().isNotEmpty) {
