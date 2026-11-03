@@ -6,7 +6,9 @@ import 'migrations/v3_to_v4.dart';
 import 'migrations/v4_to_v5.dart';
 import 'migrations/v5_to_v6.dart';
 import 'migrations/v6_to_v7.dart';
+import 'migrations/v7_to_v8.dart';
 import 'tables/context_tables.dart';
+import 'tables/dns_tables.dart';
 import 'tables/finance_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
@@ -73,13 +75,15 @@ part 'user_db.g.dart';
   // Schema v7
   AppClasses,
   AppUsageDays,
+  // Schema v8
+  DnsDomains,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 7;
+  static const currentSchema = 8;
 
   @override
   int get schemaVersion => currentSchema;
@@ -102,6 +106,8 @@ class UserDb extends _$UserDb {
                 await migrateV5ToV6(m, this);
               case 6:
                 await migrateV6ToV7(m, this);
+              case 7:
+                await migrateV7ToV8(m, this);
             }
           }
         },
@@ -151,5 +157,6 @@ class UserDb extends _$UserDb {
         scheduleAdjustments,
         appClasses,
         appUsageDays,
+        dnsDomains,
       ];
 }

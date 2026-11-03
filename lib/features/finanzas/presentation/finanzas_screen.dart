@@ -376,7 +376,8 @@ Future<int?> _askCents(BuildContext context, String title, String label, {bool a
       ],
     ),
   );
-  controller.dispose();
+  // Not disposed here: the dialog's text field still uses it while the
+  // dialog closes; it is freed with the dialog.
   if (!allowEmpty && result == _cancelled) return null;
   return result;
 }
@@ -408,8 +409,8 @@ Future<void> _editGoal(BuildContext context, WidgetRef ref, {GoalRow? existing, 
   );
   final name = title.text.trim();
   final targetText = target.text.trim();
-  title.dispose();
-  target.dispose();
+  // The fields are freed with the dialog (they are still drawn while it
+  // closes).
   if (saved != true || name.isEmpty) return;
   final cents = targetText.isEmpty ? null : parseCents(targetText);
   if (targetText.isNotEmpty && (cents == null || cents < 0)) {

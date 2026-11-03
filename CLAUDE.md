@@ -74,7 +74,8 @@ humanOS/
 │  │                           assumptions, confidence, day, format_es,
 │                           advisor/ (finance, rules: Fase 5, no LLM),
 │                           day_schedule (B1: template + one-day changes),
-│                           screen_time (B2: usage events → minutes, hiding)
+│                           screen_time (B2: usage events → minutes, hiding),
+│                           dns_filter (B3: domains, export, verdict)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -86,7 +87,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        inicio|pantalla|alarmas|asistente|finanzas|habitos|ajustes>/
+│        inicio|pantalla|filtro|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -135,6 +136,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `expenses`, `expense_categories`, `goals`, `purchase_pauses` (schema 5) | new tables | finance advisor: cents only, user categories, goals with sub-goals (`parent_id`), the wait before an unplanned purchase |
 | user `schedule_blocks`, `schedule_adjustments` (schema 6) | new tables | B1: the weekly day template (user blocks, weekdays, alarm) and one-date changes (skip, move, end later, add) |
 | user `app_classes`, `app_usage_days` (schema 7) | new tables | B2: the user's category per app and minutes per app per day (the phone keeps its usage events only some days) |
+| user `dns_domains` (schema 8) | new table | B3: the user's blocked and allowed domains (nothing preset) |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -204,6 +206,14 @@ they mark; leisure outside those blocks opens directly, and the 10 s pause
 before social apps is optional and off by default. Per-site detail inside
 Chrome is not available to third-party apps (said on screen).
 
+The DNS filter (B3) cannot be set by an app (Android allows changing the
+private DNS only with root or device-owner rights): HumanOS keeps the
+user's lists, exports them (one domain per line, or AdGuard rules), guides
+the setup of a NextDNS or AdGuard DNS profile, and checks it by resolving
+the first blocked and the first allowed domain through the system resolver
+(`InternetAddress.lookup`, which the private DNS answers). A local VPN
+filter is not included (conflicts with other VPNs, battery).
+
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
 `src/main/AndroidManifest.xml`, `src/main/kotlin/com/altair/humanos/*`,
@@ -231,7 +241,9 @@ are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
 * Heavy Duty works one-handed, the screen stays on during a session, the
   metronome is audible with the screen dimmed.
 * Fully offline except Open Food Facts barcode lookups for products missing
-  locally.
+  locally, the user-started model download (Fase 3) and the DNS filter
+  check (B3: two lookups of the user's own domains through the phone's
+  resolver).
 * Health data never leaves the device except via the user-initiated,
   AES-GCM encrypted export.
 
