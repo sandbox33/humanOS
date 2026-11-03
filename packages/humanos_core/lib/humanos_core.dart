@@ -20,6 +20,7 @@ export 'src/e1rm.dart';
 export 'src/format_es.dart';
 export 'src/hydration_plan.dart';
 export 'src/interaction_rules.dart';
+export 'src/leisure_tokens.dart';
 export 'src/log_parser.dart';
 export 'src/lp_simplex.dart';
 export 'src/macro_targets.dart';

@@ -16,6 +16,8 @@ import '../features/despensa/presentation/despensa_screen.dart';
 import '../features/estado/domain/readiness_today.dart';
 import '../features/estado/domain/targets.dart';
 import '../features/estado/presentation/estado_screen.dart';
+import '../features/fichas/domain/token_model.dart';
+import '../features/fichas/presentation/fichas_screen.dart';
 import '../features/filtro/domain/dns_model.dart';
 import '../features/filtro/presentation/filtro_screen.dart';
 import '../features/finanzas/presentation/finanzas_screen.dart';
@@ -169,6 +171,12 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       await syncAppUsage(ref);
     } on Object {
       // No usage permission or channel: the screen-time view says so.
+    }
+    if (!mounted) return;
+    try {
+      await syncTokens(ref);
+    } on Object {
+      // The ledger is rebuilt on the next start.
     }
     if (mounted) await recordReadiness(ref);
     // B3: the filter is checked on every start and return to the app.
@@ -332,6 +340,8 @@ class MasScreen extends StatelessWidget {
         tile('ALARMAS', 'Alarmas de la mañana', Icons.alarm_outlined, () => const AlarmasScreen()),
         tile('CIERRE DEL DÍA', 'Ánimo, tiempo con personas y tu pregunta', Icons.nightlight_outlined,
             () => const CierreScreen()),
+        tile('FICHAS DE OCIO', 'Opcional y apagado: tus hábitos dan fichas, tu ocio las usa', Icons.toll_outlined,
+            () => const FichasScreen()),
         tile('FILTRO', 'Redes bloqueadas por DNS: lista y comprobación', Icons.dns_outlined, () => const FiltroScreen()),
         tile('PANTALLA', 'Tiempo por app, categoría y bloque', Icons.phone_android, () => const PantallaScreen()),
         tile('FINANZAS', 'Gastos, metas y consejos pequeños', Icons.savings_outlined, () => const FinanzasScreen()),

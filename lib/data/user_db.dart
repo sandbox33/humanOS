@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'migrations/v10_to_v11.dart';
+import 'migrations/v11_to_v12.dart';
 import 'migrations/v1_to_v2.dart';
 import 'migrations/v2_to_v3.dart';
 import 'migrations/v3_to_v4.dart';
@@ -21,6 +22,7 @@ import 'tables/pay_tables.dart';
 import 'tables/profile_tables.dart';
 import 'tables/schedule_tables.dart';
 import 'tables/screen_tables.dart';
+import 'tables/token_tables.dart';
 import 'tables/training_tables.dart';
 import 'tables/work_tables.dart';
 
@@ -93,13 +95,17 @@ part 'user_db.g.dart';
   DayCloses,
   InteractionCategories,
   DayCloseInteractions,
+  // Schema v12
+  TokenEarnRules,
+  TokenCostRules,
+  TokenDays,
 ])
 class UserDb extends _$UserDb {
   UserDb(super.e);
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 11;
+  static const currentSchema = 12;
 
   @override
   int get schemaVersion => currentSchema;
@@ -130,6 +136,8 @@ class UserDb extends _$UserDb {
                 await migrateV9ToV10(m, this);
               case 10:
                 await migrateV10ToV11(m, this);
+              case 11:
+                await migrateV11ToV12(m, this);
             }
           }
         },
@@ -187,5 +195,8 @@ class UserDb extends _$UserDb {
         dayCloses,
         interactionCategories,
         dayCloseInteractions,
+        tokenEarnRules,
+        tokenCostRules,
+        tokenDays,
       ];
 }

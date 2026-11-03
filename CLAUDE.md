@@ -77,7 +77,7 @@ humanOS/
 │                           screen_time (B2: usage events → minutes, hiding),
 │                           dns_filter (B3: domains, export, verdict),
 │                           meal_plan, receipt_parser (B4), pay (B5),
-│                           day_close (B6)
+│                           day_close (B6), leisure_tokens (B7)
 │  └─ test/                    one *_test.dart per lib/src file
 ├─ assets/                     db/ (CI-provided), fonts/ (OFL), shaders/, audio/,
 │                              eval/ (assistant evaluation set, invented phrases)
@@ -89,7 +89,7 @@ humanOS/
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
 │  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
-│        inicio|pantalla|filtro|cierre|alarmas|asistente|finanzas|habitos|ajustes>/
+│        inicio|pantalla|filtro|cierre|fichas|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
@@ -142,6 +142,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `food_handling_flags`, `receipt_links` (schema 9) | new tables | B4: the user's word on how a food keeps (needs cold / lunch box / needs cooking) over the suggestion from its food group; receipt lines linked to a food once |
 | user `pay_weeks`, `cash_counts` (schema 10) | new tables | B5: what the user was paid with its normal and overtime minutes (and the overtime part when the slip shows it); cash counts kept current with what is logged after them |
 | user `day_closes`, `interaction_categories`, `day_close_interactions` (schema 11) | new tables | B6: the day's close (mood, energy, the user's own question) and minutes with people by the user's categories |
+| user `token_earn_rules`, `token_cost_rules`, `token_days` (schema 12) | new tables | B7: optional leisure tokens (off by default): the user's earning and cost rules and the daily ledger, kept when turned off |
 | user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
@@ -250,6 +251,16 @@ wrote for next time is shown. No question, category or phrase is preset;
 no score, no reproach. Trends appear only after the minimum days
 (SUPUESTOS → CIERRE DEL DÍA), always with the number of days and
 "correlación no es causa".
+
+Leisure tokens (B7) are optional and off by default; off, leisure has no
+limit or counter and nothing is read or written. Turning them on or off
+takes effect after a wait (SUPUESTOS → HÁBITOS Y RACHAS, 24 h by
+default). On, the habits and events the user picks (each habit, a logged
+session, each logged meal, the day's close) earn tokens and the app
+categories the user prices spend them per started block of minutes; the
+ledger is rebuilt per day from the user's records and never deleted when
+tokens are turned off. With no tokens left, opening priced leisure asks
+"¿abrir igual?", never blocks.
 
 The Android project is generated in CI by `flutter create`; only these files
 are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
