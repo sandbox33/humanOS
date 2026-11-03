@@ -327,14 +327,14 @@ class _TodayPanel extends ConsumerWidget {
           Row(children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => ref.read(shellTabProvider.notifier).select(1),
+                onPressed: () => ref.read(shellTabProvider.notifier).select(Tabs.registro),
                 child: const Text('REGISTRAR'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton(
-                onPressed: () => ref.read(shellTabProvider.notifier).select(3),
+                onPressed: () => ref.read(shellTabProvider.notifier).select(Tabs.trabajo),
                 child: const Text('TURNO'),
               ),
             ),

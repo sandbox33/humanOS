@@ -7,6 +7,7 @@ import '../../../data/user_db.dart';
 import '../../../services/device_context.dart';
 import '../../../services/notifications.dart';
 import '../../../services/services.dart';
+import '../../inicio/domain/schedule_model.dart';
 import '../../trabajo/data/work_repository.dart' show TemplateStatus, parseStamp;
 import '../../trabajo/domain/work_model.dart';
 import '../data/context_repository.dart';
@@ -171,6 +172,14 @@ Future<void> syncAlarms(WidgetRef ref) async {
     }
     alarms.add(AlarmSpec(id: a.id, label: a.label, minuteOfDay: minute, daysMask: a.daysMask, snoozeMinutes: a.snoozeMinutes));
   }
+  // B1: the day's blocks marked with an alarm ring through the same phone
+  // scheduler (one list replaces all).
+  alarms.addAll(blockAlarms(
+    templates: ref.read(blockTemplatesProvider),
+    today: ref.read(dayPlanProvider(0)),
+    date: ref.read(todayProvider),
+    snoozeMinutes: ref.read(currentAssumptionsProvider).integer(A.alarmSnoozeMin),
+  ));
   await ref.read(alarmServiceProvider).setAlarms(alarms);
 }
 

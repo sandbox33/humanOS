@@ -13,7 +13,9 @@ import 'data/reference_installer.dart';
 import 'data/seed.dart';
 import 'data/settings.dart';
 import 'features/asistente/domain/assistant_model.dart';
+import 'features/inicio/presentation/safe_app_list.dart';
 import 'services/device_context.dart';
+import 'services/launcher.dart';
 import 'services/llm_bridge.pigeon.dart';
 import 'services/notifications.dart';
 import 'services/screen_awake.dart';
@@ -25,13 +27,17 @@ import 'telemetry/usage_stats.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final launcher = ChannelLauncher();
+  // As the home screen, a screen that fails to build shows the plain app
+  // list instead of a blank or red screen.
+  ErrorWidget.builder = (details) => SafeAppList(launcher: launcher, reason: details.exceptionAsString());
   await initializeDateFormatting('es');
 
   final OpenedUserDb opened;
   try {
     opened = await openUserDb();
   } on Object catch (e) {
-    runApp(DatabaseErrorApp(message: '$e'));
+    runApp(DatabaseErrorApp(message: '$e', launcher: launcher));
     return;
   }
   final db = opened.db;
@@ -79,6 +85,7 @@ Future<void> main() async {
       healthSourceProvider.overrideWithValue(PluginHealthSource()),
       heartRateMonitorProvider.overrideWithValue(BleHeartRateMonitor()),
       screenTimeProvider.overrideWithValue(UsageStatsScreenTime()),
+      launcherProvider.overrideWithValue(launcher),
     ],
     child: const HumanOsApp(),
   ));
@@ -87,9 +94,12 @@ Future<void> main() async {
 /// Shown when the user database cannot be opened. Nothing is deleted: the
 /// file stays on the phone and the message says what happened.
 class DatabaseErrorApp extends StatelessWidget {
-  const DatabaseErrorApp({super.key, required this.message});
+  const DatabaseErrorApp({super.key, required this.message, this.launcher});
 
   final String message;
+
+  /// The phone's apps stay reachable even without the database.
+  final LauncherService? launcher;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +123,10 @@ class DatabaseErrorApp extends StatelessWidget {
                   'datos, la clave de cifrado se perdió: restaura tu copia cifrada '
                   'con contraseña.',
                 ),
+                if (launcher != null) ...[
+                  const SizedBox(height: 16),
+                  Expanded(child: SafeAppList(launcher: launcher!)),
+                ],
               ],
             ),
           ),
