@@ -6,11 +6,11 @@ void main() {
 
   test('70 kg at 3000 kcal', () {
     final t = macroTargets(kcal: 3000, weightKg: 70, params: defaults);
-    expect(t.proteinG, closeTo(126, 1e-9));
-    expect(t.proteinPerMealG, closeTo(31.5, 1e-9));
-    expect(t.proteinPlanG, closeTo(126, 1e-9));
+    expect(t.proteinG, closeTo(140, 1e-9));
+    expect(t.proteinPerMealG, closeTo(35, 1e-9));
+    expect(t.proteinPlanG, closeTo(140, 1e-9));
     expect(t.fatG, closeTo(100, 1e-9));
-    expect(t.carbG, closeTo((3000 - 126 * 4 - 900) / 4, 1e-9));
+    expect(t.carbG, closeTo((3000 - 140 * 4 - 900) / 4, 1e-9));
     expect(t.proteinClamped, isFalse);
     expect(t.explanationEs, isEmpty);
   });

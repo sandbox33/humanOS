@@ -10,6 +10,7 @@ import '../../../app/widgets/hos_page.dart';
 import '../../../app/widgets/terminal_panel.dart';
 import '../../../data/nutrients.dart';
 import '../../../data/user_db.dart';
+import '../../despensa/domain/meal_day.dart';
 import '../../estado/domain/targets.dart';
 import '../../heavy_duty/domain/training_plan.dart';
 import '../../indice/presentation/catalog_search.dart';
@@ -22,12 +23,15 @@ final mealTemplatesProvider = StreamProvider<List<MealTemplateRow>>(
   (ref) => ref.watch(mealsRepositoryProvider).watchTemplates(),
 );
 
-/// Meal slots of a day around its first planned work window (from the
-/// user's templates). Without planned work there are no suggested times:
+/// Meal slots of a day: the meal blocks of the user's schedule, or else
+/// around its first planned work window (from the user's templates). Without planned work there are no suggested times:
 /// the blocks are shown without a clock.
 List<MealSlot> slotsFor(WidgetRef ref, DateTime date) {
   final a = ref.watch(currentAssumptionsProvider);
   final today = ref.watch(todayProvider);
+  // B4: the meal blocks of the user's schedule come first.
+  final scheduled = ref.watch(scheduleMealSlotsProvider(daysBetween(today, date)));
+  if (scheduled.isNotEmpty) return scheduled;
   final iso = isoDate(date);
   final logs = ref.watch(dailyLogsProvider).value ?? const <DailyLogRow>[];
   final log = logs.where((l) => l.date == iso).firstOrNull;

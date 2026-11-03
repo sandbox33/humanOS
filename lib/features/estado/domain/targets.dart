@@ -159,7 +159,9 @@ final energyStatusProvider = Provider<EnergyStatus?>((ref) {
   );
   final weekly = double.tryParse(settings[SettingKey.weeklyTargetKcal] ?? '');
   final adaptive = estimate.sufficient && weekly != null;
-  final target = adaptive ? weekly : dayEnergy.kcal.toDouble();
+  // B4: a fixed target set by the user wins over the estimate.
+  final fixed = double.tryParse(settings[SettingKey.kcalTargetFixed] ?? '');
+  final target = fixed ?? (adaptive ? weekly : dayEnergy.kcal.toDouble());
   return EnergyStatus(
     weightKg: weight.kg,
     trend: trend,
@@ -173,7 +175,9 @@ final energyStatusProvider = Provider<EnergyStatus?>((ref) {
       weightKg: weight.kg,
       params: MacroParams.fromAssumptions(a),
     ),
-    modeEs: adaptive
+    modeEs: fixed != null
+        ? 'META FIJA TUYA · ${fixed.round()} kcal (AJUSTES → METAS DE COMIDA)'
+        : adaptive
         ? 'ADAPTATIVO · ${estimate.validDays} días completos'
         : 'ARRANQUE (Mifflin) · ${estimate.validDays}/${estimate.requiredDays} días',
   );

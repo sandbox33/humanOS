@@ -137,6 +137,9 @@ abstract final class SettingKey {
   static const fiberFirst = 'fiber_first';
   static const healthConnectPrompted = 'health_connect_prompted';
   static const weeklyTargetKcal = 'weekly_target_kcal';
+
+  /// B4: a fixed daily energy target in kcal; absent = the app's estimate.
+  static const kcalTargetFixed = 'kcal_target_fixed';
   static const weeklyTargetReviewed = 'weekly_target_reviewed';
   static const usageStatsAsked = 'usage_stats_asked';
   static const bleDeviceId = 'ble_device_id';

@@ -78,7 +78,7 @@ class SupuestosPage extends ConsumerWidget {
                                 alignment: Alignment.centerLeft,
                                 child: TextButton(
                                   onPressed: () => _set(ref, def.key, def.value),
-                                  child: Text('RESTAURAR ${show(def.value)}'),
+                                  child: Text('RESTABLECER A ${show(def.value)}'),
                                 ),
                               ),
                           ],
