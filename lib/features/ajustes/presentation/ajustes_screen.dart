@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../app/chores.dart';
 import '../../../app/providers.dart';
+import '../../../app/theme.dart';
 import '../../../app/widgets/big_button.dart';
 import '../../../app/widgets/clock_picker.dart';
 import '../../../app/widgets/format.dart';
@@ -131,14 +132,30 @@ class _AppearancePanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text('TEMA', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
           Wrap(spacing: 8, children: [
-            for (final accent in AccentColor.values)
+            for (final theme in HosThemeId.values)
               ChoiceChip(
-                label: Text(accent.labelEs),
-                selected: settings.accent == accent,
-                onSelected: (_) => repo.set(SettingKey.accent, accent.code),
+                label: Text(theme.labelEs),
+                selected: settings.theme == theme,
+                onSelected: (_) => repo.set(SettingKey.theme, theme.code),
               ),
           ]),
+          Note(settings.theme.descriptionEs),
+          if (ThemeRegistry.of(settings.theme).usesAccent) ...[
+            Text('ACENTO', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Wrap(spacing: 8, children: [
+              for (final accent in AccentColor.values)
+                ChoiceChip(
+                  label: Text(accent.labelEs),
+                  selected: settings.accent == accent,
+                  onSelected: (_) => repo.set(SettingKey.accent, accent.code),
+                ),
+            ]),
+          ],
+          if (context.look.terminal)
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('LÍNEAS CRT EN TÍTULOS'),

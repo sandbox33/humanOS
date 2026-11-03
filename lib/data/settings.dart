@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart' show Value;
+
 import 'user_db.dart';
 
 /// Accent colours allowed by the visual identity.
@@ -13,10 +15,27 @@ enum AccentColor {
       .firstWhere((a) => a.code == code, orElse: () => AccentColor.phosphor);
 }
 
+/// The app's themes. Each one groups its colours, fonts and decoration;
+/// a later avatar, voice or assistant wording would be added per theme
+/// here.
+enum HosThemeId {
+  wasteland('wasteland', 'WASTELAND', 'Terminal: verde y naranja sobre negro'),
+  grimorio('grimorio', 'GRIMORIO', 'Pergamino, cuero y tinta');
+
+  const HosThemeId(this.code, this.labelEs, this.descriptionEs);
+  final String code;
+  final String labelEs;
+  final String descriptionEs;
+
+  static HosThemeId parse(String? code) =>
+      HosThemeId.values.firstWhere((t) => t.code == code, orElse: () => HosThemeId.wasteland);
+}
+
 /// Typed view of `app_settings`.
 class AppSettingsState {
   const AppSettingsState({
     this.accent = AccentColor.phosphor,
+    this.theme = HosThemeId.wasteland,
     this.eventFeedback = true,
     this.crtHeaders = true,
     this.mealReminders = true,
@@ -36,6 +55,7 @@ class AppSettingsState {
 
   factory AppSettingsState.fromMap(Map<String, String> map) => AppSettingsState(
         accent: AccentColor.parse(map[SettingKey.accent]),
+        theme: HosThemeId.parse(map[SettingKey.theme]),
         eventFeedback: map[SettingKey.eventFeedback] != '0',
         crtHeaders: map[SettingKey.crtHeaders] != '0',
         mealReminders: map[SettingKey.mealReminders] != '0',
@@ -54,6 +74,9 @@ class AppSettingsState {
       );
 
   final AccentColor accent;
+
+  /// WASTELAND or GRIMORIO; switched live, without restarting.
+  final HosThemeId theme;
 
   /// ≤ 600 ms flash + haptic on a real event (PR, streak, attribute up).
   final bool eventFeedback;
@@ -102,6 +125,7 @@ class AppSettingsState {
 
 abstract final class SettingKey {
   static const accent = 'accent';
+  static const theme = 'theme';
   static const eventFeedback = 'event_feedback';
   static const crtHeaders = 'crt_headers';
   static const mealReminders = 'meal_reminders';
@@ -130,8 +154,9 @@ abstract final class SettingKey {
 }
 
 class SettingsRepository {
-  SettingsRepository(this._db);
+  SettingsRepository(this._db, {DateTime Function()? now}) : _now = now ?? DateTime.now;
   final UserDb _db;
+  final DateTime Function() _now;
 
   Stream<Map<String, String>> watchAll() =>
       _db.select(_db.appSettings).watch().map(
@@ -145,9 +170,10 @@ class SettingsRepository {
     return row?.value;
   }
 
-  Future<void> set(String key, String value) => _db
-      .into(_db.appSettings)
-      .insertOnConflictUpdate(AppSettingsCompanion.insert(key: key, value: value));
+  /// Stores [value] with the moment it changed (`updated_at`).
+  Future<void> set(String key, String value) => _db.into(_db.appSettings).insertOnConflictUpdate(
+        AppSettingsCompanion.insert(key: key, value: value, updatedAt: Value(_now().toIso8601String())),
+      );
 
   Future<void> setBool(String key, bool value) => set(key, value ? '1' : '0');
 

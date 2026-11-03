@@ -503,15 +503,16 @@ class _SafetyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final look = context.look;
     final (text, color) = switch (level) {
-      SafetyLevel.ok => ('OK', HosColors.phosphor),
-      SafetyLevel.warn => ('PRONTO', HosColors.amber),
-      SafetyLevel.discard => ('DESCARTAR', HosColors.alert),
+      SafetyLevel.ok => ('OK', look.ok),
+      SafetyLevel.warn => ('PRONTO', look.warn),
+      SafetyLevel.discard => ('DESCARTAR', look.danger),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(border: Border.all(color: color, width: 2)),
-      child: Text(text, style: TextStyle(fontFamily: HosFonts.display, fontSize: 22, color: color)),
+      child: Text(text, style: look.statusStyle(22, color)),
     );
   }
 }

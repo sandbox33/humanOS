@@ -129,6 +129,7 @@ These were needed to implement the plan without hiding state elsewhere:
 | user `purchases.total_cents`, `pantry_items.price_cents_per_kg` (schema 2) | integer cents | no `double` for money |
 | user `zones`, `context_events`, `mode_corrections`, `state_checkins`, `event_reminders` (schema 3) | new tables | location context: zones are user data; only ENTER/EXIT with a timestamp, no position history |
 | user `morning_alarms` (schema 3) | new table | morning alarms rung by the phone |
+| user `app_settings.updated_at` (schema 4) | nullable text | the brief's `settings (key, value, updated_at)`; values from before schema 4 keep NULL (date unknown) |
 
 `sqlite3_flutter_libs` is end-of-life (`0.6.0+eol`): `sqlite3` 3.x bundles
 SQLite (with FTS5) through build hooks, so the app depends on `drift`,
@@ -217,6 +218,14 @@ are committed: `android/app/build.gradle.kts`, `proguard-rules.pro`,
 * Gamification: feedback only on real events (PR, streak, attribute up),
   ≤ 600 ms + haptic, can be disabled. No loot, no lotteries, no decorative
   animation. A broken streak shows "mejor racha" and "días cumplidos en 30".
-* Visual identity is an original retro terminal: black background, one
-  accent (phosphor green `#39FF14` or safety orange `#FF6B00`), VT323 /
-  Share Tech Mono headings, IBM Plex Mono data. No Fallout names or assets.
+* Two original themes in `ThemeRegistry` (`lib/app/theme.dart`), chosen in
+  AJUSTES and switched live (the settings stream rebuilds `MaterialApp`):
+  * **WASTELAND** — retro terminal: black background, one accent (phosphor
+    green `#39FF14` or safety orange `#FF6B00`) with the other as secondary,
+    VT323 / Share Tech Mono headings, IBM Plex Mono data, static scanlines.
+  * **GRIMORIO** — parchment, leather and ink, Cinzel headings, IM Fell
+    English labels, IBM Plex Mono data, a still rune rule drawn in code.
+  Status colours (readiness, food safety) come from the `HosLook` theme
+  extension, never from a fixed colour. `test/theme_test.dart` checks WCAG
+  AA (4.5:1) for every text colour in both themes. All fonts are OFL with
+  their licence in `assets/fonts/`. No Fallout names or assets.

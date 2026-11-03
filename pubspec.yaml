@@ -70,3 +70,11 @@ flutter:
         - asset: assets/fonts/IBMPlexMono-Regular.ttf
         - asset: assets/fonts/IBMPlexMono-Bold.ttf
           weight: 700
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel-Regular.ttf
+        - asset: assets/fonts/Cinzel-Bold.ttf
+          weight: 700
+    - family: IMFellEnglish
+      fonts:
+        - asset: assets/fonts/IMFellEnglish-Regular.ttf

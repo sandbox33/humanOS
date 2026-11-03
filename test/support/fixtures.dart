@@ -119,6 +119,7 @@ Widget testApp({
   ReferenceDb? reference,
   DateTime? now,
   List<Override> extra = const [],
+  HosThemeId theme = HosThemeId.wasteland,
 }) {
   final clock = now ?? DateTime(2026, 10, 13, 9);
   return ProviderScope(
@@ -130,7 +131,7 @@ Widget testApp({
       ...extra,
     ],
     child: MaterialApp(
-      theme: buildTheme(AccentColor.phosphor),
+      theme: buildTheme(AccentColor.phosphor, theme: theme),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

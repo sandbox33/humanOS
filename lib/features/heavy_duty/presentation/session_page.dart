@@ -560,10 +560,10 @@ class _WorkSetViewState extends ConsumerState<_WorkSetView> {
               Container(
                 margin: const EdgeInsets.only(top: 6),
                 padding: const EdgeInsets.all(8),
-                color: HosColors.amber.withValues(alpha: 0.15),
+                color: context.look.warn.withValues(alpha: 0.15),
                 child: Text(
                   'NO AL FALLO · PARA CON ${t.rirTarget ?? 2} EN RESERVA',
-                  style: theme.textTheme.titleMedium?.copyWith(color: HosColors.amber),
+                  style: theme.textTheme.titleMedium?.copyWith(color: context.look.warn),
                 ),
               ),
             Note(_e.cueEs),

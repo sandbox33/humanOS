@@ -30,7 +30,9 @@ class TodayNotifier extends Notifier<DateTime> {
 final todayProvider = NotifierProvider<TodayNotifier, DateTime>(TodayNotifier.new);
 
 final settingsRepositoryProvider =
-    Provider<SettingsRepository>((ref) => SettingsRepository(ref.watch(userDbProvider)));
+    Provider<SettingsRepository>(
+  (ref) => SettingsRepository(ref.watch(userDbProvider), now: ref.watch(clockProvider)),
+);
 
 final settingsMapProvider = StreamProvider<Map<String, String>>(
   (ref) => ref.watch(settingsRepositoryProvider).watchAll(),

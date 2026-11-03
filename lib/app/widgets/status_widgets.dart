@@ -3,10 +3,11 @@ import 'package:humanos_core/humanos_core.dart';
 
 import '../theme.dart';
 
-Color bandColor(ReadinessBand band) => switch (band) {
-      ReadinessBand.verde => HosColors.phosphor,
-      ReadinessBand.amarillo => HosColors.amber,
-      ReadinessBand.rojo => HosColors.alert,
+/// The band's colour in the current theme.
+Color bandColor(HosLook look, ReadinessBand band) => switch (band) {
+      ReadinessBand.verde => look.ok,
+      ReadinessBand.amarillo => look.warn,
+      ReadinessBand.rojo => look.danger,
     };
 
 /// Readiness band as a solid block with its code.
@@ -17,7 +18,8 @@ class BandBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = bandColor(band);
+    final look = context.look;
+    final color = bandColor(look, band);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: large ? 18 : 10, vertical: large ? 8 : 4),
       decoration: BoxDecoration(
@@ -26,11 +28,7 @@ class BandBadge extends StatelessWidget {
       ),
       child: Text(
         band.code,
-        style: TextStyle(
-          fontFamily: HosFonts.display,
-          fontSize: large ? 40 : 24,
-          color: color,
-        ),
+        style: look.statusStyle(large ? 40 : 24, color),
       ),
     );
   }
@@ -71,7 +69,7 @@ class Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: HosColors.surfaceHigh,
+        color: context.look.surfaceHigh,
         border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.5)),
       ),
       child: Text(text, style: theme.textTheme.labelMedium),

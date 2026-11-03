@@ -88,6 +88,10 @@ class AppSettings extends Table {
   TextColumn get key => text()();
   TextColumn get value => text()();
 
+  /// When the value last changed (ISO local time); NULL for values stored
+  /// before schema 4, whose date is unknown.
+  TextColumn get updatedAt => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {key};
 }

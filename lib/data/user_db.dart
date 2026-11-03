@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'migrations/v1_to_v2.dart';
 import 'migrations/v2_to_v3.dart';
+import 'migrations/v3_to_v4.dart';
 import 'tables/context_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/habit_tables.dart';
@@ -61,7 +62,7 @@ class UserDb extends _$UserDb {
 
   /// Bump only together with a new migration step and a new file in
   /// `drift_schemas/`.
-  static const currentSchema = 3;
+  static const currentSchema = 4;
 
   @override
   int get schemaVersion => currentSchema;
@@ -76,6 +77,8 @@ class UserDb extends _$UserDb {
                 await migrateV1ToV2(m, this);
               case 2:
                 await migrateV2ToV3(m, this);
+              case 3:
+                await migrateV3ToV4(m, this);
             }
           }
         },
