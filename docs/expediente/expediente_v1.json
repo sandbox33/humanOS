@@ -1,0 +1,64 @@
+{
+  "esquema": 1,
+  "proyecto": "HumanOS",
+  "actualizado": "2026-11-03",
+  "estado": "activo",
+  "objetivo": "App Android personal (launcher) que organiza horario, comida, dinero, pantalla, cierre del día y proyectos; todo local, configurable y de costo cero.",
+  "fases": [
+    {"id": "F0", "nombre": "Fases 0–5: seguridad, trabajos, contexto, asistente de frases, temas, finanzas", "estado": "hecha", "estimado_dias": null, "inicio": "2026-10-31", "fin": "2026-11-01", "bloqueada_por": []},
+    {"id": "F1", "nombre": "B1–B3: launcher, tiempo en pantalla, filtro DNS", "estado": "hecha", "estimado_dias": null, "inicio": "2026-11-03", "fin": "2026-11-03", "bloqueada_por": ["F0"]},
+    {"id": "F2", "nombre": "B4–B7: comida y alacena, dinero, cierre del día, fichas de ocio", "estado": "en_curso", "estimado_dias": null, "inicio": "2026-11-03", "fin": null, "bloqueada_por": ["F1"]},
+    {"id": "F3", "nombre": "Pruebas en el teléfono de B1–B7", "estado": "pendiente", "estimado_dias": 3, "inicio": null, "fin": null, "bloqueada_por": ["F2"]},
+    {"id": "F4", "nombre": "Observatorio de proyectos (pestaña PROYECTOS)", "estado": "pendiente", "estimado_dias": null, "inicio": null, "fin": null, "bloqueada_por": ["F3"]},
+    {"id": "F5", "nombre": "Motor de autoevaluación local", "estado": "pendiente", "estimado_dias": null, "inicio": null, "fin": null, "bloqueada_por": ["F3"]},
+    {"id": "F6", "nombre": "Repo privado tras compilar y verificar release", "estado": "pendiente", "estimado_dias": 1, "inicio": null, "fin": null, "bloqueada_por": ["F3"]}
+  ],
+  "tareas": [
+    {"id": "T1", "fase": "F2", "titulo": "Confirmar que los PRs #11–#14 están fusionados en main", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null},
+    {"id": "T2", "fase": "F3", "titulo": "Checklist B1: 3 reinicios, escape en menos de 10 s, alarma con pantalla bloqueada", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null},
+    {"id": "T3", "fase": "F3", "titulo": "Checklist B2: minutos por app ±10 % frente a Bienestar digital durante 3 días", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null},
+    {"id": "T4", "fase": "F3", "titulo": "Checklist B3: WhatsApp con foto y llamada con el filtro activo", "estado": "hecha", "creada": "2026-11-03", "cerrada": "2026-11-03"},
+    {"id": "T5", "fase": "F3", "titulo": "Checklists de B4–B7 en el teléfono", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null},
+    {"id": "T6", "fase": "F6", "titulo": "Quitar del README la descripción de rutina personal antes de seguir público", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null},
+    {"id": "T7", "fase": "F4", "titulo": "Crear docs/expediente/ en el repo con ficha.md y este expediente.json", "estado": "pendiente", "creada": "2026-11-03", "cerrada": null}
+  ],
+  "ideas": [
+    {"id": "I1", "titulo": "Simulación Monte Carlo de dinero (probabilidad de cumplir metas)", "detalle": "Agentes matemáticos sin LLM, en el teléfono.", "estado": "nueva", "creada": "2026-11-03", "motivo": null},
+    {"id": "I2", "titulo": "Simulación Monte Carlo de proyectos (probabilidad de terminar fases)", "detalle": "Usa el factor de desvío real del expediente.", "estado": "nueva", "creada": "2026-11-03", "motivo": null},
+    {"id": "I3", "titulo": "Asistente con internet para mantener catálogo de evidencia con citas verificadas", "detalle": "Consultas genéricas, vista previa, cuota derivada de llamadas gratuitas.", "estado": "aceptada", "creada": "2026-11-03", "motivo": "Diseño provisional escrito; pendiente de construir tras el motor."},
+    {"id": "I4", "titulo": "Coach de voz offline con TTS del sistema", "detalle": null, "estado": "nueva", "creada": "2026-11-02", "motivo": null},
+    {"id": "I5", "titulo": "Planos de equipo de ejercicio para fabricar en el taller", "detalle": null, "estado": "nueva", "creada": "2026-11-02", "motivo": null},
+    {"id": "I6", "titulo": "Módulo de cine", "detalle": null, "estado": "nueva", "creada": "2026-11-03", "motivo": null},
+    {"id": "I7", "titulo": "Actualizador dentro de la app", "detalle": null, "estado": "aceptada", "creada": "2026-11-02", "motivo": "En backlog."},
+    {"id": "I8", "titulo": "Sistema multiagente tipo MiroFish con LLM", "detalle": null, "estado": "descartada", "creada": "2026-11-01", "motivo": "Costo en tokens inviable con cuota gratuita; reemplazado por simulación matemática (I1, I2)."},
+    {"id": "I9", "titulo": "Reloj o banda inteligente", "detalle": null, "estado": "descartada", "creada": "2026-11-01", "motivo": "Sin presupuesto; el teléfono cubre lo necesario."},
+    {"id": "I10", "titulo": "Chat de IA dentro de la app", "detalle": null, "estado": "descartada", "creada": "2026-11-03", "motivo": "La app evalúa con datos y métricas; no conversa."}
+  ],
+  "decisiones": [
+    {"id": "D1", "fecha": "2026-10-30", "decision": "Stack Flutter/Dart + drift + Kotlin por canales; Flet descartado", "motivo": "El repo ya era Flutter; Flet no sirve para servicios en segundo plano.", "reemplaza": null, "vigente": true},
+    {"id": "D2", "fecha": "2026-10-30", "decision": "Repo público hasta compilar; privado después", "motivo": "Claude Code perdió acceso la vez anterior al ponerlo privado.", "reemplaza": null, "vigente": true},
+    {"id": "D3", "fecha": "2026-11-02", "decision": "Costo cero por uso; Claude solo para programación y proyectos", "motivo": "Presupuesto.", "reemplaza": null, "vigente": true},
+    {"id": "D4", "fecha": "2026-11-03", "decision": "Todo configurable; nada personal precargado en la app", "motivo": "La app sale vacía y cada usuario la ajusta.", "reemplaza": null, "vigente": true},
+    {"id": "D5", "fecha": "2026-11-03", "decision": "Ocio sin culpa: sin límites por defecto; fichas opcionales y apagadas", "motivo": "Decisión del usuario.", "reemplaza": null, "vigente": true},
+    {"id": "D6", "fecha": "2026-11-03", "decision": "Sin bloqueo de dominios de Meta; lista DNS vacía de fábrica", "motivo": "El usuario lo gestiona en su teléfono.", "reemplaza": null, "vigente": true},
+    {"id": "D7", "fecha": "2026-11-03", "decision": "La IA no es chat; la app se auto-evalúa con métricas y preguntas cortas", "motivo": "Evitar generación de texto sin base.", "reemplaza": null, "vigente": true},
+    {"id": "D8", "fecha": "2026-11-03", "decision": "Sin líneas de crisis en la app", "motivo": "Decisión del usuario.", "reemplaza": null, "vigente": true},
+    {"id": "D9", "fecha": "2026-11-03", "decision": "Observatorio de proyectos como pestaña de HumanOS con expedientes en cada repo", "motivo": "Evitar pérdida de ideas y vueltas en círculo.", "reemplaza": null, "vigente": true}
+  ],
+  "riesgos": [
+    {"id": "R1", "riesgo": "Alcance que crece sin terminar lo construido", "impacto": "alto", "mitigacion": "Ideas nuevas entran a la bandeja; no al código hasta cerrar F3."},
+    {"id": "R2", "riesgo": "HyperOS mata procesos y alarmas", "impacto": "alto", "mitigacion": "Guía de configuración y prueba de alarma con la app cerrada."},
+    {"id": "R3", "riesgo": "Datos personales expuestos en el repo público", "impacto": "medio", "mitigacion": "T6 y pasar a privado en F6."}
+  ],
+  "briefs": [
+    {"archivo": "briefs/2026-10-30-v3-ajustes.md", "estado": "ejecutado", "reemplazado_por": null},
+    {"archivo": "briefs/2026-11-02-fases-6-12.md", "estado": "reemplazado", "reemplazado_por": "briefs/2026-11-03-final.md"},
+    {"archivo": "briefs/2026-11-02-mvp-launcher.md", "estado": "reemplazado", "reemplazado_por": "briefs/2026-11-03-final.md"},
+    {"archivo": "briefs/2026-11-03-final.md", "estado": "ejecutado", "reemplazado_por": null},
+    {"archivo": "briefs/2026-11-03-b4-b7.md", "estado": "ejecutado", "reemplazado_por": null},
+    {"archivo": "briefs/2026-11-03-asistente-provisional.md", "estado": "vigente", "reemplazado_por": null},
+    {"archivo": "briefs/2026-11-03-asistente-privacidad-cuotas.md", "estado": "vigente", "reemplazado_por": null},
+    {"archivo": "briefs/2026-11-03-observatorio-proyectos.md", "estado": "vigente", "reemplazado_por": null}
+  ],
+  "siguiente_paso": "Confirmar que #11–#14 están fusionados y hacer las checklists de B1–B7 en el teléfono."
+}

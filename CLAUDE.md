@@ -88,13 +88,15 @@ humanOS/
 │  ├─ data/                    reference_db, user_db (drift), tables/, seed, export
 │  ├─ telemetry/               health_connect_source, ble_hr_source, usage_stats, confidence
 │  ├─ services/                notifications (native scheduler), device_context, …
-│  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|contexto|
+│  └─ features/<estado|registro|despensa|indice|heavy_duty|trabajo|turno|contexto|onboarding|
 │        inicio|pantalla|filtro|cierre|fichas|alarmas|asistente|finanzas|habitos|ajustes>/
 │        data/ domain/ presentation/
 ├─ android/app/                build.gradle.kts, proguard-rules.pro,
 │                              src/main/{AndroidManifest.xml, kotlin/…, res/…}
-├─ test/                       widget and integration tests
-└─ .github/workflows/          ci.yml, etl.yml, android.yml
+├─ docs/                       expediente/ (ESQUEMA.md, expediente.json v2, v1, briefs/),
+│                              firma.md (APK signing report and owner procedure)
+├─ test/                       widget and integration tests (expediente_test validates docs/expediente)
+└─ .github/workflows/          ci.yml, etl.yml, android.yml, clave.yml
 ```
 
 ## Data
