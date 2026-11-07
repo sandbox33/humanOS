@@ -62,8 +62,12 @@ jobs:
       - name: Pruebas (incluye datos reales de USDA)
         run: python -m pytest etl/tests -v -rs
 
-  app:
-    name: App Flutter (analyze + test)
+  # Static checks first: a lint or a schema drift fails here in about two
+  # minutes, and the tests and the APK wait for it. The app code is not
+  # dart-formatted (most files would change), so only humanos_core checks
+  # the format.
+  analyze:
+    name: App Flutter (analyze)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +89,20 @@ jobs:
             diff -u "drift_schemas/$(basename "$f")" "$f"
           done
       - run: flutter analyze
+
+  app:
+    name: App Flutter (test)
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Generar código (drift)
+        run: dart run build_runner build
       # Every test by name, and none may hang the job.
       - run: flutter test --reporter expanded --timeout 90s
 
@@ -132,7 +150,7 @@ jobs:
 
   android:
     name: APK de prueba (firma de depuración)
-    needs: app
+    needs: analyze
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
